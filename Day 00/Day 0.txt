@@ -1,0 +1,61 @@
+=================================================
+            Day 0 Agenda
+=================================================
+1.  About the vlog
+2.  The blueprint
+3.  Study materials I'll use
+        OCG + Command Guide
+        CCNP SW videos Chris Bryant
+        Probably try: networklessons.com
+4   Setting up the schedule + tracker
+5.  Workbook: My INE access expired
+    Might buy INE WB(250$)
+    Might buy Cisco Lab manual (45$ http://www.ciscopress.com/store/ccnp-switch-lab-manual-9781587134012)
+    Might create my own based on the OCG and blueprint
+6.  Current lab setup/tools/pomodoro technique
+        4x Catalyst 3560 15.x
+        1x 1841 15.x
+        EVE-NG
+=================================================
+            Tools
+=================================================
+PuttyND
+Wireshark
+Visual Studio Code
+Github
+Anki
+draw.io
+FreeMind
+Tomato timer
+=================================================
+            Links:
+=================================================
+Books:
+    Blueprint: https://learningnetwork.cisco.com/community/certifications/ccnp/switch_v2/exam-topics
+    OCG: http://www.ciscopress.com/store/ccnp-routing-and-switching-switch-300-115-cert-guide-9780133414325
+    Command Guide: http://www.ciscopress.com/store/ccnp-routing-and-switching-portable-command-guide-9781587144349
+    Chris Bryant Video Series: https://www.udemy.com/ccnpallinone/
+=================================================
+            Social Media:
+=================================================
+Youtube: https://www.youtube.com/channel/UCvxtmyssCxwkosMF0y5pG7Q
+Twitch: https://www.twitch.tv/adam_from_the_future
+Blog: https://adamfromthefuture.wordpress.com/
+Github Repo: https://github.com/adamfromthefuture/CCNP-Switch
+=================================================
+
+
+=================================================
+Other
+=================================================
+OCG Content http://www.ciscopress.com/store/ccnp-routing-and-switching-switch-300-115-official-9781587205606
+
+TheLanTamer
+
+=================================================
+Friday Checkpoints:
+=================================================
+What are the topics I covered?
+What are the concerned topics? -> What actions should I take?
+Where am I with the timeline? May 3 Friday
+What should I do differently?
