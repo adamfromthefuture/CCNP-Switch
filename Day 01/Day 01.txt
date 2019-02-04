@@ -1,0 +1,14 @@
+=================================================
+            Day 01 Agenda
+=================================================
+1.  Progress made today going over my notes:
+    The marketing chapter
+    Layer 2 Switch Operation
+2.  Lab: Let's Pretend -> lab track client from SW1 to SW4 based on MAC address.
+        Checking the CAM table
+        Defining a CAM table aging time global/per Vlan
+        Verify the content of the CAM table with multiple show commands
+        Clear dynamic entries from the CAM table and verify.
+        Define static CAM table entries. SW1 1111.1111.1111 SW4 4444.4444.4444
+        Modify the CAM table to drop all traffic destined for VPC4
+3.  Anki cards: show, clear and config commands
