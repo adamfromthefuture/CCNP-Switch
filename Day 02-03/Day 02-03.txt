@@ -1,0 +1,34 @@
+=================================================
+            Day 2-3 Agenda
+=================================================
+1. CDP
+    Create Mindmap
+    Create Flashcards
+    Lab done
+    TBA: Workbook
+
+2. LLDP
+    Create Mindmap
+    Create Flashcards
+    Lab done
+    TBA: Workbook
+
+3. Autonegotiation -> LAB
+    TBA: Workbook
+    Switch to Switch auto-auto -> works full duplex 100
+
+    Switch to Switch hard coded
+        Autonegotiation end negotiated half duplex so CSMA/CD can work and other side is hard coded, did not notice half duplex behavior
+
+    Switch to Router auto-auto -> works full duplex 100
+
+    Switch to Router hard coded
+        Switch to Switch hard coded
+
+    Switch to Mikrotik auto-auto -> works full duplex 100
+        Mikrotik(Gig) SW(100) -> endless loop could not negotiate. But it was explicitly told to negotiate Gig only.
+
+    Switch to Mikrotik hard coded
+        Switch to Switch hard coded with degraded speed(10Mbps instead of 100)
+
+   
