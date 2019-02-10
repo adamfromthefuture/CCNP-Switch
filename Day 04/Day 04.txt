@@ -1,0 +1,27 @@
+=================================================
+            Day 4 Agenda
+=================================================
+1.  VLANs
+        VLAN Design
+2.  Trunks
+    Tagging
+    DTP
+        trunk + trunk = trunk
+        trunk + dynamic desirable = trunk
+        trunk + dynamic auto = trunk X
+        dd + trunk = trunk
+        dd + dd = trunk
+        dd + da = trunk
+        da + da = access X
+        Disable DTP
+
+
+
+
+
+
+Agenda for Saturday:
+Labs and demos
+POE Cisco to Cisco, Cisco to non Cisco
+Voice VLAN
+Wireless VLAN: standalone & lwap but with non Cisco

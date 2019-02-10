@@ -1,0 +1,6 @@
+no ip domain-lookup
+hostname SW%
+line console  0
+logging synchronous
+privilege level 15
+exec-timeout 0 0

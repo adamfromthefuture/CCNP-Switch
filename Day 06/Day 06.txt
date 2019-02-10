@@ -1,0 +1,120 @@
+=================================================
+            Day 6 Agenda
+=================================================
+1. VTP - Covered on Day 5, lab was done today
+2. POE
+    Switch to Phone, Switch to Mikrotik, Switch to EdgeNetworks LWAP
+3. Voice and Wireless VLAN
+
+Lab workbook to cover:
+    Switch L2 operation
+    Network Discovery with CDP and LLDP
+    Negotiating Interface Speed and Duplexity
+    Managing VLAN database
+    Managing Trunks
+    DTP
+    VTP - Done
+
+=================================================
+        Bits n bytes:
+=================================================
+Jed's CCNP Notes: https://neckercube.com/index.php/2017/08/05/cisco-ccnp-switch-topics/
+Exam Countdown: https://www.timeanddate.com/countdown/launch?iso=20190503T00&p0=3313&msg=CCNP+Switch+Exam&font=slab
+=================================================
+        POE Power Over Ethernet
+=================================================
+Three sources of power for a device
+1. Power brick 
+2. Power injector
+3. POE
+
+48V DC 
+I2P 7W Cisco
+POE 15.4W Standard
+POE+ 25.25W Standard
+UPOE 60W Cisco
+
+Detecting Device:
+By default power is disabled for the ports, but tries to discover if power is needed or not.
+
+Power Classes:
+0(default) 15.4W
+1 4W
+2 7W
+3 15.4W
+4 up to 30W -> catalyst 4500 Only.
+
+
+
+Switch#show power inline
+
+Module   Available     Used     Remaining
+          (Watts)     (Watts)    (Watts)
+------   ---------   --------   ---------
+3           370.0        0.0       370.0
+
+
+Cisco IP Phone is plugged into Fa3/0/47, enabling port manually.
+
+Switch(config)#interface fastEthernet 3/0/47
+Switch(config-if)#no shut
+*Mar  1 00:15:23.703: %ILPOWER-7-DETECT: Interface Fa3/0/47: Power Device detected: IEEE PD
+*Mar  1 00:15:23.795: %ILPOWER-5-POWER_GRANTED: Interface Fa3/0/47: Power granted
+*Mar  1 00:15:25.288: %LINK-3-UPDOWN: Interface FastEthernet3/0/47, changed state to down
+*Mar  1 00:15:27.780: %LINK-3-UPDOWN: Interface FastEthernet3/0/47, changed state to up
+*Mar  1 00:15:28.786: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet3/0/47, changed state to up
+Switch#show power inline fastEthernet 3/0/47
+Interface Admin  Oper       Power   Device              Class Max
+                            (Watts)
+--------- ------ ---------- ------- ------------------- ----- ----
+Fa3/0/47  auto   on         7.0     IP Phone 7941       2     15.4
+
+Interface  AdminPowerMax   AdminConsumption
+             (Watts)           (Watts)
+---------- --------------- --------------------
+
+Fa3/0/47              15.4                 15.4
+
+
+Never provide POE on the port:
+Switch(config)#interface fa3/0/47
+Switch(config-if)#power inline never
+
+Default behavior:
+Switch(config)#interface fa3/0/47
+Switch(config-if)#power inline auto
+
+Undersizing power consumption:
+Switch(config-if)#power inline static max 4000
+*Mar  1 00:21:18.709: %ILPOWER-7-DETECT: Interface Fa3/0/47: Power Device detected: IEEE PD
+*Mar  1 00:21:18.709: %ILPOWER-5-ILPOWER_POWER_DENY: Interface Fa3/0/47: inline power denied
+*Mar  1 00:21:19.162: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet3/0/47, changed state to down
+*Mar  1 00:21:19.162: %LINEPROTO-5-UPDOWN: Line protocol on Interface Vlan1, changed state to down
+*Mar  1 00:21:20.168: %LINK-3-UPDOWN: Interface FastEthernet3/0/47, changed state to down
+*Mar  1 00:21:22.165: %ILPOWER-5-IEEE_DISCONNECT: Interface Fa3/0/47: PD removed
+*Mar  1 00:21:22.483: %ILPOWER-7-DETECT: Interface Fa3/0/47: Power Device detected: IEEE PD
+*Mar  1 00:21:22.483: %ILPOWER-5-ILPOWER_POWER_DENY: Interface Fa3/0/47: inline power denied
+
+Statically allocate power to the port
+Switch(config-if)#power inline consumption 7000
+%CAUTION: Interface Fa3/0/47: Misconfiguring the 'power inline
+ consumption/allocation' command may cause damage to the switch and void
+ your warranty. Take precaution not to oversubscribe the power supply.
+ It is recommended to enable power policing if the switch supports it.
+ Refer to documentation.
+
+=================================================
+        Voice VLAN
+=================================================
+Voice packets have to be carried over a special vlan 
+
+switchport voice vlan (VLAN-ID): Special trunk, Voice is tagged, Data is untagged/native VLAN
+switchport voice vlan dot1p: trunk, voice is going to be tagged as VLAN 0
+switchport voice vlan untagged: trunk, neither voice or data will be tagged
+switchport voice vlan none: access port
+
+=================================================
+        Wireless VLAN
+=================================================
+Autunomous AP: VLANs are mapped WLANs -> VLANs are mapped to SSIDs. Trunk have to be implemented
+LWAP: Access port is needed. VLANs are terminated on the controller side. Only has to provide the MGMT acces.
