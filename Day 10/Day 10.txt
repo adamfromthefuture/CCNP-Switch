@@ -1,0 +1,44 @@
+=================================================
+            Day 10 Agenda
+=================================================
+
+STP Spanning Tree Protocol - (Spannenbaum, don't worry this is just a joke)
+
+Bridging loop: The process of forwarding a single frame between two switches continuosly.
+Broadcast storm: Bridging loop with a broadcast frame in this case.
+Spanning tree loop: This is incorrect, should use Bridging loop instead.
+
+Spanning Tree 802.1D:
+Loop avoidance mechanism on layer 2, it provides link redundancy.
+
+Path Cost values(popular ones):
+BW      Cost
+10      100
+100     19
+1000    4
+10000   2
+
+Network Diameter:
+Root bridge has 7 underlying switches in a branch, hello timer is calculated based on this travel time.
+Cisco recommends to custom fith the value, so it takes less time converge and it should only be done on the root bridge.
+
+=================================================
+Agenda for Sunday LAB session related to STP:
+=================================================
+Interface State machine
+Root Bridge Election
+Root Port Election
+Designated Port Election
+Topology Changes
+Timers
+
+=================================================
+        Bits and Bytes
+=================================================
+Python Network Programming: https://www.udemy.com/python-programming-for-real-life-networking-use/learn/v4/overview
+
+
+Music tonight:
+1st: https://www.youtube.com/watch?v=qiQZaHZLlsA
+2nd: https://www.youtube.com/watch?v=ochjnqMC5UQ
+

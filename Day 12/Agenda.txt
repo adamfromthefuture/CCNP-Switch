@@ -1,0 +1,72 @@
+=================================================
+            Day 12 Agenda
+=================================================
+Lab streams: Saturday/Sunday
+Technical Topics: Tuesday, Thursdays
+Vlogging(Evaluation, Summary of the week, News and improvements, Schedule, AOB): Friday
+
+=================================================
+Week summary: personal performance evaluation: 
+=================================================
+Not motivated
+Personal schedule kicked up
+I was lazy: had tons of downtime and wasn't using it efficiently
+Lab: 2 x MMF SX SFP was ordered + cable
+Video Gear: Planning to add to separate some money from my pocket: Prio 1: Soft Boxes, Prio 2: Rode NT-1 
+
+=================================================
+    Sunday Lab:
+=================================================
+Stream starts at 10:00 CET(Central European Time)
+Timezones: https://www.timeanddate.com/worldclock/converter.html?iso=20190217T090000&p1=3313&p2=136&p3=179&p4=137&p5=166&p6=tz_bst-bangladesh
+
+Task list: topology is created
+=================================================
+1.: Enable STP on all switches. 
+    A: Map the STP topology. Find out which switch is the root bridge. Mark the Root, Designated and Blocking ports.
+    B: Create VLAN 10 and disable STP only on this VLAN
+2.: Manipulate Root Bridge Election
+    A: Make sure that SW1 will become the Primary Root Bridge
+    B: Make sure that SW2 will become the Secondary Root Bridge
+    C: Make sure that the correct diameter is Stream
+3.: Manipulate the Path selection
+    A: Adjust Path Cost
+    B: Adjust Port Cost
+4.: Manipulate convergence time:
+    A: Adjust the Hello timer
+    B: Adjust the Max Age timer
+    C: Adjust the Forward delay timer
+5.: Utilize the STP Toolkit
+    A: Enable Portfast on the Access links
+    B: Enable Uplinkfast
+    C: Enable Backbonefast
+6: Invoke topology change
+
+7.: After Lab Session:
+    A: Create Flashcards
+    B: Check if Update is needed on mindmap
+
+8.: https://gns3vault.com/switching/spanning-tree-for-ccna
+
+=================================================
+Plans for Backlog week 01:
+=================================================
+Smash through the videos and the command guide.
+Take notes where needed, update/create the mindmaps and flahscards.
+Test myself based on the Do I already know this quiz.
+Review topics that are not a 100% percent clear
+Do a self evaluation
+
+=================================================
+Bits and Bytes:
+=================================================
+STP Cheatsheet: http://packetlife.net/media/library/11/Spanning_Tree.pdf
+Jed's notes: neckercube.com/index.php/2017/08/05/cisco-ccnp-switch-topics/#PortFast
+Tonights music: https://www.youtube.com/watch?v=CQZYzGO8QlM
+
+=================================================
+Future projects:
+=================================================
+Cisco SD-WAN: Video series, not live
+Mikrotik videos: Check how the architecture works, compare to Cisco maybe, Video series, not live.
+Home automation: Abominations with ESP and Domoticz. Video series, not live.

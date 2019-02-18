@@ -1,0 +1,64 @@
+=================================================
+            Day 9 Agenda
+=================================================
+How to cause a bridging loop, on purpose.
+Topology diagram is created.
+
+1. Create a baseline.
+
+interface range fastEthernet 0/23 - 24
+no spanning-tree vlan 1
+
+*Mar  1 00:22:21.137: %SW_MATM-4-MACFLAP_NOTIF: Host 0050.7966.6801 in vlan 1 is flapping between port Fa0/24 and port Fa0/23
+*Mar  1 00:22:21.137: %SW_MATM-4-MACFLAP_NOTIF: Host 0050.7966.6802 in vlan 1 is flapping between port Fa0/23 and port Fa0/24
+SW1#sh mac address-table dynamic
+          Mac Address Table
+-------------------------------------------
+
+Vlan    Mac Address       Type        Ports
+----    -----------       --------    -----
+   1    0014.f2cf.8f19    DYNAMIC     Fa0/23
+   1    0014.f2cf.8f1a    DYNAMIC     Fa0/24
+   1    0050.7966.6801    DYNAMIC     Fa0/23
+   1    0050.7966.6802    DYNAMIC     Fa0/24
+Total Mac Addresses for this criterion: 4
+SW1#sh mac address-table dynamic
+          Mac Address Table
+-------------------------------------------
+
+Vlan    Mac Address       Type        Ports
+----    -----------       --------    -----
+   1    0014.f2cf.8f19    DYNAMIC     Fa0/23
+   1    0014.f2cf.8f1a    DYNAMIC     Fa0/24
+   1    0050.7966.6801    DYNAMIC     Fa0/24
+   1    0050.7966.6802    DYNAMIC     Fa0/23
+   
+SW1#sh int fa0/23
+FastEthernet0/23 is up, line protocol is up (connected)
+  Hardware is Fast Ethernet, address is 0014.f2e4.f219 (bia 0014.f2e4.f219)
+  MTU 1546 bytes, BW 100000 Kbit/sec, DLY 100 usec,
+     reliability 255/255, txload 159/255, rxload 157/255
+  Encapsulation ARPA, loopback not set
+  Keepalive set (10 sec)
+  Full-duplex, 100Mb/s, media type is 10/100BaseTX
+  input flow-control is off, output flow-control is unsupported
+  ARP type: ARPA, ARP Timeout 04:00:00
+  Last input 00:00:02, output 00:00:02, output hang never
+  Last clearing of "show interface" counters never
+  Input queue: 0/75/0/0 (size/max/drops/flushes); Total output drops: 20915
+  Queueing strategy: fifo
+  Output queue: 0/40 (size/max)
+  5 minute input rate 61734000 bits/sec, 114050 packets/sec
+  5 minute output rate 62404000 bits/sec, 115359 packets/sec
+     76318938 packets input, 5162457211 bytes, 0 no buffer
+     Received 68772864 broadcasts (15339270 multicasts)
+     0 runts, 0 giants, 0 throttles
+     0 input errors, 0 CRC, 0 frame, 0 overrun, 0 ignored
+     0 watchdog, 15339270 multicast, 0 pause input
+     0 input packets with dribble condition detected
+     78110673 packets output, 5282872036 bytes, 0 underruns
+     0 output errors, 0 collisions, 1 interface resets
+     0 unknown protocol drops
+     0 babbles, 0 late collision, 0 deferred
+     0 lost carrier, 0 no carrier, 0 pause output
+     0 output buffer failures, 0 output buffers swapped out

@@ -1,0 +1,242 @@
+Task list: topology is created
+=================================================
+1.: Enable STP on all switches. 
+    A: Map the STP topology. Find out which switch is the root bridge. Mark the Root, Designated and Blocking ports. Which switch became the root bridge and why?
+    B: Create VLAN 10 and disable STP only on this VLAN.
+2.: Manipulate Root Bridge Election
+    A: Make sure that SW1 will become the Primary Root Bridge
+    B: Make sure that SW2 will become the Secondary Root Bridge
+    C: Make sure that the correct diameter is used
+3.: Manipulate the Path selection - Need to Reevaluate
+    A: Adjust Path Cost: Make sure that SW3 selects a path to SW1 over SW2
+    B: Adjust Port Priority: Between SW1 and SW2 use Fa0/24 instead of 0/23
+4.: Manipulate convergence time:
+    A: Adjust the Hello timer
+    B: Adjust the Max Age timer
+    C: Adjust the Forward delay timer
+5.: Utilize the STP Toolkit
+    A: Enable Portfast on the Access links
+    B: Enable Uplinkfast
+    C: Enable Backbonefast
+6: Invoke topology change
+
+7.: After Lab Session:
+    A: Create Flashcards
+    B: Check if Update is needed on mindmap
+
+8.: https://gns3vault.com/switching/spanning-tree-for-ccna
+
+=================================================
+Task 1:
+=================================================
+A: 
+=================================================
+Root bridge is SW2, because the priority is the same on all switches(default), and SW2 has the lowest MAC address.
+
+
+SW1#sh version | i Base
+Base ethernet MAC Address       : 00:14:F2:E4:F2:00
+SW2#sh version | i Base
+Base ethernet MAC Address       : 00:14:F2:CF:8F:00
+SW3#sh version | i MAC
+Base ethernet MAC Address       : 00:14:F2:CF:9F:80
+SW4#sh version | i MAC
+Base ethernet MAC Address       : 00:14:F2:E4:E1:80
+
+SW1#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    32769
+             Address     0014.f2cf.8f00
+             Cost        19
+             Port        25 (FastEthernet0/23)
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
+             Address     0014.f2e4.f200
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/20              Altn BLK 19        128.22   P2p
+Fa0/22              Altn BLK 19        128.24   P2p
+Fa0/23              Root FWD 19        128.25   P2p
+Fa0/24              Altn BLK 19        128.26   P2p
+
+SW2#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    32769
+             Address     0014.f2cf.8f00
+             This bridge is the root
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
+             Address     0014.f2cf.8f00
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/20              Desg FWD 19        128.22   P2p
+Fa0/22              Desg FWD 19        128.24   P2p
+Fa0/23              Desg FWD 19        128.25   P2p
+Fa0/24              Desg FWD 19        128.26   P2p
+
+SW3#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    32769
+             Address     0014.f2cf.8f00
+             Cost        19
+             Port        24 (FastEthernet0/22)
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
+             Address     0014.f2cf.9f80
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/20              Desg FWD 19        128.22   P2p
+Fa0/22              Root FWD 19        128.24   P2p
+
+SW4#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    32769
+             Address     0014.f2cf.8f00
+             Cost        19
+             Port        22 (FastEthernet0/20)
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
+             Address     0014.f2e4.e180
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/20              Root FWD 19        128.22   P2p
+Fa0/22              Desg FWD 19        128.24   P2p
+
+=================================================
+B:
+=================================================
+SW4(config)#no spanning-tree vlan 10
+
+SW4#sh spanning-tree vlan 10
+
+Spanning tree instance(s) for vlan 10 does not exist.
+
+
+
+
+=================================================
+Task 2
+=================================================
+A: Make sure that SW1 will become the Primary Root Bridge
+=================================================
+Adjusting the bridge priority to a lower level, you must be able to divide the number with 4096.
+
+SW1(config)#spanning-tree vlan 1 priority 1
+% Bridge Priority must be in increments of 4096.
+% Allowed values are:
+  0     4096  8192  12288 16384 20480 24576 28672
+  32768 36864 40960 45056 49152 53248 57344 61440
+
+SW1(config)#spanning-tree vlan 1 priority 0
+
+SW1#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    1
+             Address     0014.f2e4.f200
+             This bridge is the root
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    1      (priority 0 sys-id-ext 1)
+             Address     0014.f2e4.f200
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/20              Desg FWD 19        128.22   P2p
+Fa0/22              Desg FWD 19        128.24   P2p
+Fa0/23              Desg FWD 19        128.25   P2p
+Fa0/24              Desg FWD 19        128.26   P2p
+
+Using the Macro:
+SW1(config)#spanning-tree vlan 1 root primary
+
+SW1#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    1
+             Address     0014.f2e4.f200
+             This bridge is the root
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    1      (priority 0 sys-id-ext 1)
+             Address     0014.f2e4.f200
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/20              Desg FWD 19        128.22   P2p
+Fa0/22              Desg FWD 19        128.24   P2p
+Fa0/23              Desg FWD 19        128.25   P2p
+Fa0/24              Desg FWD 19        128.26   P2p
+
+
+=================================================
+B: Make sure that SW2 will become the Secondary Root Bridge
+=================================================
+SW2(config)#spanning-tree vlan 1 priority 4096
+
+Using the Macro:
+SW2(config)#spanning-tree vlan 1 root secondary
+
+SW2#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    1
+             Address     0014.f2e4.f200
+             Cost        19
+             Port        25 (FastEthernet0/23)
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    28673  (priority 28672 sys-id-ext 1)
+             Address     0014.f2cf.8f00
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/20              Desg FWD 19        128.22   P2p
+Fa0/22              Desg FWD 19        128.24   P2p
+Fa0/23              Root FWD 19        128.25   P2p
+Fa0/24              Altn BLK 19        128.26   P2p
+
+=================================================
+C: Make sure that the correct diameter is used
+=================================================
+SW1(config)#spanning-tree vlan 1 root primary diameter 2
