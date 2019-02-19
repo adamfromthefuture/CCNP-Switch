@@ -1,0 +1,249 @@
+=================================================
+            Day 16 Agenda
+=================================================
+Catch uo the remaining tasks.
+
+3.: Manipulate the Path selection - Need to Reevaluate
+    A: Adjust Path Cost: Make sure that SW3 selects a path to SW1 over SW2
+    B: Adjust Port Priority: Between SW1 and SW2 use Fa0/24 instead of 0/23
+
+4.: Manipulate convergence time:
+    A: Adjust the Hello timer
+    B: Adjust the Max Age timer - Have to revisit, no confident
+    C: Adjust the Forward delay timer
+
+5.: Utilize the STP Toolkit
+    A: Enable Portfast on the Access links
+    B: Enable Uplinkfast - Have to revisit, not confident
+    C: Enable Backbonefast - Skipped, not confident
+
+6: Invoke catastrophic topology change by reloading SW1 and ivestigate what happened
+
+7.: After Lab Session:
+    A: Create Flashcards -  Take this offline.
+    B: Check if Update is needed on mindmap - No need for that 
+
+8.: https://gns3vault.com/switching/spanning-tree-for-ccna - Skipped for next time
+
+=================================================
+Bits n Bytes
+Confusion: Cost vs Priority explained
+https://learningnetwork.cisco.com/thread/16012
+
+=================================================
+            Gear Update
+=================================================
+Ordered two softboxes(The Beacons of Gondor)
+Changes in the Microphone plan: Gonna go with AT2020
+SFPs are on the way
+
+=================================================
+Task 3: A: Adjust Path Cost: Make sure that SW3 selects a path to SW1 over SW2
+=================================================
+SW3(config)#interface fastEthernet 0/22
+SW3(config-if)#spanning-tree cost 5
+
+SW3#sh spanning-tree  | i Fa0/22
+Fa0/22              Altn BLK 5         128.24   P2p
+
+SW2(config-if)#interface fa0/23
+SW2(config-if)#spanning-tree cost 5
+
+SW2#sh spanning-tree | i /23
+             Port        25 (FastEthernet0/23)
+Fa0/23              Root FWD 5         128.25   P2p
+
+SW3#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    1
+             Address     0014.f2e4.f200
+             Cost        10
+             Port        24 (FastEthernet0/22)
+             Hello Time   2 sec  Max Age 10 sec  Forward Delay  7 sec
+
+  Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
+             Address     0014.f2cf.9f80
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/20              Altn BLK 19        128.22   P2p
+Fa0/22              Root FWD 5         128.24   P2p
+
+=================================================
+Task 3: B: Adjust Port Priority: Between SW1 and SW2 use Fa0/24 instead of 0/23
+=================================================
+First we'll have to configure 0/24 to be equal cost.
+
+SW2(config)#interface fa0/24
+SW2(config-if)#spanning-tree cost 5
+
+SW2#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    1
+             Address     0014.f2e4.f200
+             Cost        5
+             Port        25 (FastEthernet0/23)
+             Hello Time   2 sec  Max Age 10 sec  Forward Delay  7 sec
+
+  Bridge ID  Priority    28673  (priority 28672 sys-id-ext 1)
+             Address     0014.f2cf.8f00
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Co
+*Mar  1 00:33:12.738: %SYS-5-CONFIG_I: Configured from console by consolest      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/20              Desg FWD 19        128.22   P2p
+Fa0/22              Desg FWD 19        128.24   P2p
+Fa0/23              Root FWD 5         128.25   P2p
+Fa0/24              Altn BLK 5         128.26   P2p
+
+Then configure the port priority to be lower on SW1
+SW1(config)#interface fas0/24
+SW1(config-if)#spanning-tree port-priority 16
+
+SW2#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    1
+             Address     0014.f2e4.f200
+             Cost        5
+             Port        26 (FastEthernet0/24)
+             Hello Time   2 sec  Max Age 10 sec  Forward Delay  7 sec
+
+  Bridge ID  Priority    28673  (priority 28672 sys-id-ext 1)
+             Address     0014.f2cf.8f00
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  7   sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/20              Desg FWD 19        128.22   P2p
+Fa0/22              Desg FWD 19        128.24   P2p
+Fa0/23              Altn BLK 5         128.25   P2p
+Fa0/24              Root FWD 5         128.26   P2p
+
+!!!Cost is preferred first then the Priority!!!
+=================================================
+Task 4.: A: Adjust the Hello timer to 5 seconds on all switches
+=================================================
+Will be propagated by the Root Switch via BPDUs
+
+SW1(config)#spanning-tree vlan 1 hello-time 5
+
+=================================================
+Task 4.: B: Adjust the Max Age timer to 10 seconds on all switches
+=================================================
+Will be propagated by the Root Switch via BPDUs
+SW1(config)#spanning-tree vlan 1 max-age 10
+
+
+=================================================
+Task 4.: C: Adjust the Forward delay timer
+=================================================
+Will be propagated by the Root Switch via BPDUs
+SW1(config)#spanning-tree vlan 1 forward-time 4
+
+=================================================
+5.: A: Enable Portfast on the Access links on SW3
+=================================================
+SW3(config)#interface fa0/11
+SW3(config-if)#spanning-tree portfast
+%Warning: portfast should only be enabled on ports connected to a single
+ host. Connecting hubs, concentrators, switches, bridges, etc... to this
+ interface  when portfast is enabled, can cause temporary bridging loops.
+ Use with CAUTION
+
+%Portfast has been configured on FastEthernet0/11 but will only
+ have effect when the interface is in a non-trunking mode.
+
+SW3#
+*Mar  1 01:03:36.615: %SYS-5-CONFIG_I: Configured from console by console
+*Mar  1 01:03:37.470: set portid: VLAN0001 Fa0/11: new port id 800D
+*Mar  1 01:03:37.470: STP: VLAN0001 Fa0/11 ->jump to forwarding from blocking
+SW3#
+*Mar  1 01:03:37.781: %LINK-3-UPDOWN: Interface FastEthernet0/11, changed state to up
+*Mar  1 01:03:38.787: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/11, changed state to up
+
+
+Enable portfast globally:
+spanning-tree portfast default
+
+=================================================
+5.: B: Enable Uplinkfast on SW4
+=================================================
+SW4(config)#spanning-tree uplinkfast
+
+SW4#sh spanning-tree uplinkfast
+UplinkFast is enabled
+
+Station update rate set to 150 packets/sec.
+
+UplinkFast statistics
+-----------------------
+Number of transitions via uplinkFast (all VLANs)            : 0
+Number of proxy multicast addresses transmitted (all VLANs) : 0
+
+Name                 Interface List
+-------------------- ------------------------------------
+VLAN0001             Fa0/22(fwd), Fa0/20
+
+SW4#debug spanning-tree uplinkfast
+Spanning Tree uplinkfast debugging is on
+
+*Mar  1 01:11:19.179: STP FAST: make_forwarding: via UPLINKFAST: NOT: port FastEthernet0/20 VLAN0001 is: uplink enabled new root FastEthernet0/20 (me)prev root exists(8018/<none>) cur state forwarding role uplink
+*Mar  1 01:11:19.179: STP FAST: make_forwarding: via UPLINKFAST: NOT: port FastEthernet0/11 VLAN0001 is: uplink enabled new root FastEthernet0/20 (not me)prev root exists(8018/<none>) cur state forwarding role uplink
+*Mar  1 01:11:19.179: STP FAST: make_forwarding: via UPLINKFAST: NOT: port FastEthernet0/22 VLAN0001 is: uplink enabled new root FastEthernet0/20 (not me)prev root exists(8018/<none>) cur state blocking role looped
+*Mar  1 01:11:19.683: %LINK-3-UPDOWN: Interface FastEthernet0/22, changed state to up
+*Mar  1 01:11:20.689: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/22, changed state to up
+*Mar  1 01:11:21.537: STP FAST: make_forwarding: via UPLINKFAST: NOT: port FastEthernet0/20 VLAN0001 is: uplink enabled new root FastEthernet0/20 (me)prev root exists(8018/<none>) cur state forwarding role uplink
+*Mar  1 01:11:21.537: STP FAST: make_forwarding: via UPLINKFAST: NOT: port FastEthernet0/11 VLAN0001 is: uplink enabled new root FastEthernet0/20 (not me)prev root exists(8018/<none>) cur state forwarding role uplink
+*Mar  1 01:11:23.491: %SYS-5-CONFIG_I: Configured from console by console
+*Mar  1 01:11:34.539: STP FAST: UPLINKFAST: make_forwarding on VLAN0001 FastEthernet0/22 root port id new: 128.24 prev: 128.22
+*Mar  1 01:11:34.539: %SPANTREE_FAST-7-PORT_FWD_UPLINK: VLAN0001 FastEthernet0/22 moved to Forwarding (UplinkFast).
+*Mar  1 01:11:34.539: STP FAST: make_forwarding: via UPLINKFAST: NOT: port FastEthernet0/11 VLAN0001 is: uplink enabled new root FastEthernet0/22 (not me)prev root exists(8016/FastEthernet0/20) cur state forwarding role uplink
+
+
+=================================================
+6: Invoke catastrophic topology change by reloading SW1 and ivestigate what happened
+=================================================
+Summary of events:
+SW1 was reloaded, SW2 received Topology Change from R3 and R4.
+Then Root Bridge election took place. -> SW2 became the Root
+When SW1 was available again it took over the Root.
+
+SW2#
+*Mar  1 01:18:45.378: STP: VLAN0001 heard root 49153-0014.f2e4.e180 on Fa0/20
+*Mar  1 01:18:45.386: STP: VLAN0001 heard root 32769-0014.f2cf.9f80 on Fa0/22
+*Mar  1 01:18:45.386: STP: VLAN0001 Topology Change rcvd on Fa0/20
+*Mar  1 01:18:45.386: STP: VLAN0001 Topology Change rcvd on Fa0/22
+
+SW2#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    28673
+             Address     0014.f2cf.8f00
+             This bridge is the root
+             Hello Time   5 sec  Max Age 10 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    28673  (priority 28672 sys-id-ext 1)
+             Address     0014.f2cf.8f00
+             Hello Time   5 sec  Max Age 10 sec  Forward Delay 15 sec
+             Aging Time  15  sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/20              Desg FWD 19        128.22   P2p
+Fa0/22              Desg FWD 19        128.24   P2p
