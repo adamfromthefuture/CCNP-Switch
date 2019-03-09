@@ -1,0 +1,462 @@
+================================================
+            Contents:
+1: Root Bridge Placement
+2: Path Selection
+3: Timers
+    1: Hello Timer
+    2: Forward Delay
+    3: Max Age
+4: Redundant Link Convergence
+    1: Portfast
+    2: Uplinkfast
+    3: BackboneFast
+================================================
+1: Root Bridge Placement
+During the placement of the root bridge you have to take the following in consideration:
+    Root bridge should be in a central location
+    Root bridge should be a high performance switch
+
+Extended system-id: 4 bits of priority multiplier and 12 bits VLAN-id.
+Enabled by default.
+Configure extended system-id:
+spanning-tree extended system-id
+
+Setting the root bridge:
+A.: Manual
+B.: Automatic placement(macro like command set)
+___________________________________________________________________________________________________________________________________________________________________________________
+A.: Manual root bridge placement.
+Preference is towards the lowest root priority.
+Configuration:
+    spanning-tree vlan <vlan-id> priority <priority number, increment of 4096>
+
+By default SW2 is the root bridge for VLAN 1 in my lab. We are going to attempt to change the root bridge to SW1.
+SW2#sh spanning-tree  vlan 1
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    32769
+             Address     0014.f2cf.8f00
+             This bridge is the root
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
+             Address     0014.f2cf.8f00
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/23              Desg FWD 19        128.25   P2p
+Fa0/24              Desg FWD 19        128.26   P2p
+
+SW1(config)#spanning-tree vlan 1 priority 8192
+
+SW1#sh spanning-tree vlan 1
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    8193
+             Address     0014.f2e4.f200
+             This bridge is the root
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    8193   (priority 8192 sys-id-ext 1)
+             Address     0014.f2e4.f200
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  15  sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/23              Desg FWD 19        128.25   P2p
+Fa0/24              Desg LRN 19        128.26   P2p
+___________________________________________________________________________________________________________________________________________________________________________________
+B.: Automatic placement:
+Macro like root bridge placement.
+Optimizes values so the devices should become the root bridge. Only happens once, so in case a new switch is added to the network, it is possible to replace the root bridge.
+With the macro you can specify the primary and the secondary bridge.
+!!!Disclaimer!!! Automatic method doesn't guarantee the root role.
+Diameter: number of switches under the root bridge in one branch.
+
+SW1(config)#spanning-tree vlan 1 root primary
+SW2(config)#spanning-tree vlan 1 root secondary
+
+SW2#sh spanning-tree vlan 1
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    24577
+             Address     0014.f2e4.f200
+             Cost        19
+             Port        25 (FastEthernet0/23)
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    28673  (priority 28672 sys-id-ext 1)
+             Address     0014.f2cf.8f00
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role S
+*Mar  1 00:11:09.511: %SYS-5-CONFIG_I: Configured from console by consolets Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/23              Root FWD 19        128.25   P2p
+Fa0/24              Altn BLK 19        128.26   P2p
+
+
+Making SW2 become the primary root bridge:
+SW2#sh spanning-tree vlan 1
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    24577
+             Address     0014.f2cf.8f00
+             This bridge is the root
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    24577  (priority 24576 sys-id-ext 1)
+             Address     0014.f2cf.8f00
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  15  sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/23              Desg FWD 19        128.25   P2p
+Fa0/24              Desg LIS 19        128.26   P2p
+___________________________________________________________________________________________________________________________________________________________________________________
+2: Path Selection
+
+STP Path selection happens based on:
+1. Lowest Bridge ID(BID) -  MAC 
+2. Lowest root path Cost
+3. Lowest sender bridge ID
+4. Lowest sender port ID
+
+Tuning and verifying the root path cost:
+Can be done on a per vlan or per interface basis.
+!!!Tune it on the downstream device!!!
+
+SW1#sh spanning-tree vlan 1
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    24577
+             Address     0014.f2cf.8f00
+             Cost        19
+             Port        25 (FastEthernet0/23)
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    24577  (priority 24576 sys-id-ext 1)
+             Address     0014.f2e4.f200
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/23              Root FWD 19        128.25   P2p
+Fa0/24              Altn BLK 19        128.26   P2p
+
+SW1(config-if)#spanning-tree vlan 1 cost  1
+
+SW1#sh spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    24577
+             Address     0014.f2cf.8f00
+             Cost        1
+             Port        26 (FastEthernet0/24)
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    24577  (priority 24576 sys-id-ext 1)
+             Address     0014.f2e4.f200
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  15  sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/23              Altn BLK 19        128.25   P2p
+Fa0/24              Root LIS 1         128.26   P2p
+
+SW1#sh spanning-tree interface fastEthernet 0/24
+
+Vlan                Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+VLAN0001            Root FWD 1         128.26   P2p
+SW1#sh spanning-tree interface fastEthernet 0/23
+
+Vlan                Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+VLAN0001            Altn BLK 19        128.25   P2p
+___________________________________________________________________________________________________________________________________________________________________________________
+3: Timers
+Adjusting timers can tune the convergence times.
+Should only be configured/changed on the root bridge. Timers will be propagated via BPDUs.
+Timers can be changed per VLAN basis.
+
+Be careful with changing the timers as you can easily cause loops if the changes are not planned properly.
+
+STP Timers:
+  > Hello timer 
+  > Forward Delay
+  > Max Age
+
+1: Hello Timer: 
+  Defines: Sending configuration BPDUs on a regular basis, from the root bridge to other switches. Bridges expect to receive BPDU messages else, they will assume catastrophic events.
+  Possible values: 1-10 seconds, 2 by default
+
+  Configure: 
+  SW2(config)#spanning-tree vlan 1  hello-time 5
+
+  Verify: 
+  SW2#sh spanning-tree vlan 1 | i Hello
+              Hello Time   5 sec  Max Age 20 sec  Forward Delay 15 sec
+              Hello Time   5 sec  Max Age 20 sec  Forward Delay 15 sec
+
+2: Forward Delay
+  Defines: The time the switchport spends in Listening and Learning state.
+  Possible values: 4-30 seconds, default 15. Please note, if forward delay time is set too low, it might allow loops to form and can cripple the network.
+  Configure:
+  SW2(config)#spanning-tree vlan 1 forward-time 4
+
+  Verify:
+  SW2#sh spanning-tree vlan 1 | i Forw
+              Hello Time   5 sec  Max Age 20 sec  Forward Delay  4 sec
+              Hello Time   5 sec  Max Age 20 sec  Forward Delay  4 sec
+
+3: Max Age
+  Defines: Lifetime of the stored BPDUs.
+
+  Possible values: 6-40 seconds, default is 20 seconds.
+
+  Configure:
+  SW2(config)#spanning-tree vlan 1 max-age 6
+
+  Verify:
+  SW2#sh spanning-tree vlan 1 | i Max
+              Hello Time   5 sec  Max Age  6 sec  Forward Delay  4 sec
+              Hello Time   5 sec  Max Age  6 sec  Forward Delay  4 sec
+___________________________________________________________________________________________________________________________________________________________________________________
+4: Redundant Link Convergence
+Methods/Enhancements that allow faster convergence.
+  1: Portfast
+    Used on acces layer, ports where only workstations or endpoints are connected to.
+    Portfast allows to skip several STP port statuses and put the port directly to Forwarding state.
+    Loop detection will still be operational on the port, and if a loop is detected the port moves to Blocking state.
+    
+    Configure: Disabled by default.
+      A: Enable on all non-trunking interfaces.
+      SW2(config)#spanning-tree portfast default
+      %Warning: this command enables portfast by default on all interfaces. You
+      should now disable portfast explicitly on switched ports leading to hubs,
+      switches and bridges as they may create temporary bridging loops.
+
+      B: Enable/Disable per interface
+      SW2(config)#interface range fastEthernet 0/19-24
+      SW2(config-if-range)#no spanning-tree portfast
+
+      C: Enable PortFast for trunks:
+      SW2(config)#interface fastEthernet 0/11
+      SW2(config-if)#spanning-tree portfast trunk
+      %Warning: portfast should only be enabled on ports connected to a single
+      host. Connecting hubs, concentrators, switches, bridges, etc... to this
+      interface  when portfast is enabled, can cause temporary bridging loops.
+      Use with CAUTION
+
+    Verify:
+    My switches haven't negotiated trunking and I don't have trunks configured, so the interface going towards an other switch is enabled with portfast.
+    SW2#show spanning-tree interface fastEthernet 0/24 portfast
+    VLAN0001            enabled
+
+    Debug:
+    debug spanning-tree events
+    *Mar  1 00:36:46.983: %SYS-5-CONFIG_I: Configured from console by console
+    *Mar  1 00:36:48.225: set portid: VLAN0001 Fa0/24: new port id 801A
+    *Mar  1 00:36:48.225: STP: VLAN0001 Fa0/24 ->jump to forwarding from blocking
+    SW2#
+    *Mar  1 00:36:48.712: %LINK-3-UPDOWN: Interface FastEthernet0/24, changed state to up
+    *Mar  1 00:36:49.718: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/24, changed state to up
+
+    After disabling portfast on switch links:
+    SW2#sh spanning interface fa0/24 portfast
+    VLAN0001            disabled
+
+  Good to know: 
+    If you enable voice VLAN feature, portfast is enabled. If you disable the voice VLAN Portfast will still be enabled.
+    SW1(config-if)#interface fa0/11
+    SW1(config-if)#switchport mode access
+    SW1(config-if)#switchport access vlan 10
+    SW1(config-if)#switchport voice vlan 20
+    SW1(config-if)#do sh span int fa 0/11 port
+    VLAN0010            enabled
+    VLAN0020            enabled
+
+    !Removing voice VLAN
+    SW1(config-if)#no switchport voice vlan
+    SW1(config-if)#do sh span int fa 0/11 port
+    VLAN0010            enabled
+
+  2: Uplinkfast
+    Used on ports that the switch can potentially use to reach the root bridge.(Both blocking and forwarding ports) <-These are called as an Uplink Group.
+    If the forwarding port failes an other port from the Uplink Group will become active.
+    The port will go immediatelly from Blocking to Forwarding state.
+    If the original port comes back up, the switch will wait 2 times the Forward delay, to become the root port again.
+  
+    Enabling uplinkfast will prevent the switch from becoming the root bridge, by setting the priority to 49152+VLAN ID, and port cost will be increased by 3000.
+
+    Cutover: The switch sends dummy multicast frames to 0100.00cd.cdcd. Dummy multicast frame will be sent for every single MAC address in the MAC address table.
+      This is needed due to the fact that the MAC address table might not age out before the cutover happens and the switch starts forwarding.
+    
+    Where to implement: Anywhere, except Core to Distribution links, Cisco does not recommend it.
+     
+    Configure: 
+    Cannot be configure on a per VLAN basis, it's one for all.
+    SW1(config)#spanning-tree uplinkfast
+
+    Verify:
+    SW1#sh spanning-tree vlan 1
+
+    VLAN0001
+      Spanning tree enabled protocol ieee
+      Root ID    Priority    32769
+                Address     0014.f2cf.8f00
+                Cost        3019
+                Port        25 (FastEthernet0/23)
+                Hello Time   5 sec  Max Age  6 sec  Forward Delay  4 sec
+
+      Bridge ID  Priority    49153  (priority 49152 sys-id-ext 1)
+                Address     0014.f2e4.f200
+                Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+                Aging Time  300 sec
+      Uplinkfast enabled
+
+    Interface           Role Sts Cost      Prio.Nbr Type
+    ------------------- ---- --- --------- -------- --------------------------------
+    Fa0/19              Altn BLK 3019      128.21   P2p
+    Fa0/20              Altn BLK 3019      128.22   P2p
+    Fa0/23              Root FWD 3019      128.25   P2p
+    Fa0/24              Altn BLK 3019      128.26   P2p
+
+    SW1#show spanning-tree summary
+    Switch is in pvst mode
+    Root bridge for: VLAN0010
+    Extended system ID           is enabled
+    Portfast Default             is disabled
+    PortFast BPDU Guard Default  is disabled
+    Portfast BPDU Filter Default is disabled
+    Loopguard Default            is disabled
+    EtherChannel misconfig guard is enabled
+    UplinkFast                   is enabled
+    BackboneFast                 is disabled
+    Configured Pathcost method used is short
+
+    Name                   Blocking Listening Learning Forwarding STP Active
+    ---------------------- -------- --------- -------- ---------- ----------
+    VLAN0001                     3         0        0          1          4
+    VLAN0010                     0         0        0          1          1
+    ---------------------- -------- --------- -------- ---------- ----------
+    2 vlans                      3         0        0          2          5
+
+    Station update rate set to 150 packets/sec.
+
+    UplinkFast statistics
+    -----------------------
+    Number of transitions via uplinkFast (all VLANs)            : 0
+    Number of proxy multicast addresses transmitted (all VLANs) : 0
+   
+    SW1#sh spanning-tree uplinkfast
+    UplinkFast is enabled
+
+    Station update rate set to 150 packets/sec.
+
+    UplinkFast statistics
+    -----------------------
+    Number of transitions via uplinkFast (all VLANs)            : 0
+    Number of proxy multicast addresses transmitted (all VLANs) : 0
+
+    Name                 Interface List
+    -------------------- ------------------------------------
+    VLAN0001             Fa0/23(fwd), Fa0/19, Fa0/20, Fa0/24
+    VLAN0010
+
+    !Forcing Uplinkfast to change links, by shutting down the main interface:
+    SW1#sh spanning-tree uplinkfast
+    UplinkFast is enabled
+
+    Station update rate set to 150 packets/sec.
+
+    UplinkFast statistics
+    -----------------------
+    Number of transitions via uplinkFast (all VLANs)            : 1
+    Number of proxy multicast addresses transmitted (all VLANs) : 4
+
+    Name                 Interface List
+    -------------------- ------------------------------------
+    VLAN0001             Fa0/24(fwd), Fa0/19, Fa0/20
+    VLAN0010
+
+    !Reverting:
+    *Mar  1 01:18:24.985: %SPANTREE_FAST-7-PORT_FWD_UPLINK: VLAN0001 FastEthernet0/23 moved to Forwarding (UplinkFast).
+
+    SW1#sh spanning-tree uplinkfast
+    UplinkFast is enabled
+
+    Station update rate set to 150 packets/sec.
+
+    UplinkFast statistics
+    -----------------------
+    Number of transitions via uplinkFast (all VLANs)            : 2
+    Number of proxy multicast addresses transmitted (all VLANs) : 8
+
+    Name                 Interface List
+    -------------------- ------------------------------------
+    VLAN0001             Fa0/23(fwd), Fa0/19, Fa0/20, Fa0/24
+VLAN0010
+
+  3: BackboneFast
+    Cisco proprietary feature. Have to be implemented on all switches.
+    Used for indirect link failures. Indirect link is a link not connected to the local switch.
+    Detected when inferior BPDU is received. Inferior BPDU=Receive multiple BPDUs from multiple devices after the know path to the root is lost.
+    Esentially what BackboneFast will do is skip the Max Age Stage, and use RLQ=Root Link query.
+    RLQ works like echo and reply, messages are request and response.
+    Request: is sent by the switch detecting indirect link outage. Sent by the port receiving the BPDUs. Message will contain the ID of the Root switch.
+    Response: the switch sending inferior BPDus will check whether the known root bridge is the same as in the Request.
+
+    Configure:(On all switches)
+    SW1(config)#spanning-tree backbonefast
+
+    Verify:
+    SW1#sh spanning-tree summary
+    SW1#show spanning-tree backbonefast
+    BackboneFast is enabled
+
+    BackboneFast statistics
+    -----------------------
+    Number of transition via backboneFast (all VLANs)           : 0
+    Number of inferior BPDUs received (all VLANs)               : 0
+    Number of RLQ request PDUs received (all VLANs)             : 0
+    Number of RLQ response PDUs received (all VLANs)            : 0
+    Number of RLQ request PDUs sent (all VLANs)                 : 0
+    Number of RLQ response PDUs sent (all VLANs)                : 0
+
+    !Shut the links on SW3 towards SW2.
+    SW3(config)#interface range fa0/21-22
+    SW3(config-if-range)#shut
+    
+    SW1#show spanning-tree backbonefast
+    BackboneFast is enabled
+
+    BackboneFast statistics
+    -----------------------
+    Number of transition via backboneFast (all VLANs)           : 1
+    Number of inferior BPDUs received (all VLANs)               : 2
+    Number of RLQ request PDUs received (all VLANs)             : 0
+    Number of RLQ response PDUs received (all VLANs)            : 5
+    Number of RLQ request PDUs sent (all VLANs)                 : 5
+    Number of RLQ response PDUs sent (all VLANs)                : 0
+___________________________________________________________________________________________________________________________________________________________________________________

@@ -1,0 +1,20 @@
+=================================================
+            Day 33 Agenda
+=================================================
+Self evalutaion: 
+    Unmotivated
+    Stressed/Worn out- root cause is work life balance/integration
+
+Agenda for Day 34
+------------------------------------
+Follow up/Part2(Day 30) 
+Mindmap: STP Toolkit
+Notes: STP Toolkit(Portfast, etc.)
+
+RSTP/MST(Mindmaps, Notes)
+Lab excercise, create workbook part as well.
+
+Agenda for Day 35:
+------------------------------------
+Etherchannel(Mindmap and Notes)
+Lab??? we'll see.

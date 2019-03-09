@@ -1,0 +1,264 @@
+================================================
+            Contents:
+1: Protecting against unexpected BPDUs
+    1.1: Root Guard
+    1.2: BPDU Guard
+2: Protecting against loss of BPDUs
+    2.1: Loop Guard
+    2.2: UDLD
+3: Disabling STP: BPDU Filter
+================================================
+
+1: Protecting against unexpected BPDUs
+Efficient STP Topology: Predictable Root Bridge Placement
+Root Guard and BPDU guard are safeguarding mechanism against rogue/unwanted switches to become the Root Switch.
+___________________________________________________________________________________________________________________________________________________________________________________
+1.1: Root Guard
+Implement on ports where candidate root bridges can be connected or on ports where no other switches are expected.
+If Root Guard is enabled and a Superior BPDU is received on a port the port will be moved to root-inconsistent STP state.
+    root-inconsistent state: Can listen to BPDUs but no data can be sent.
+When Superior BPDUs are not received on the port anymore the port will be cycled through the STP States -> Can go to Forwarding state.
+
+TLDR: Root Guard will prevent a port from ever becoming a root port.
++----------------------------------------------------------------------------------------------------+
+|                                                                                                    |
+|  +-----------------+                 +-----------------+ Sends Superior BPDUs+----------------+    |
+|  |                 |Desg         Root|                 <--------------------|                 |    |
+|  |     Switch 1    +-----------------+     Switch 2    |--------------------+     Switch 3    |    |
+|  |   Root Bridge   |                 |                 <-----+              | Candidate Root  |    |
+|  +-----------------+                 +-----------------+     |              +-----------------+    |
+|                                                              |                                     |
+|                                     Enable Root Guard        |                                     |
+|                                                              +                                     |
+|                                                            Port will be mo^ed to root+inconsistent |
+|                                                                                                    |
++----------------------------------------------------------------------------------------------------+
+
+By default Root Guard is turned off, bu it can be enabled on a per interface basis.
+(config-if)# spanning-tree guard root
+!!!Works on a port basis, no matter which VLAN is used for the port!!!
+!!!Cannot enabled Loop Guard and Root Guard on the same port!!!
+
+Show command:
+List inconsistent ports: show spanning-tree inconsistentports
+Show status of the root bridge: show spanning-tree root
+Show detailed information on STP: show spanning-tree
+
+Examples:
+Switch(config)#interface fastEthernet 0/11
+Switch(config-if)#spanning-tree guard root
+*Mar  1 00:03:20.621: %SPANTREE-2-ROOTGUARD_CONFIG_CHANGE: Root guard enabled on port FastEthernet0/11.
+*Mar  1 00:09:29.024: %SPANTREE-2-ROOTGUARD_BLOCK: Root guard blocking port FastEthernet0/23 on VLAN0001.
+
+Switch#sh spanning-tree root
+
+                                        Root    Hello Max Fwd
+Vlan                   Root ID          Cost    Time  Age Dly  Root Port
+---------------- -------------------- --------- ----- --- ---  ------------
+VLAN0001         32769 0014.f2e4.f200         0    2   20  15
+
+Switch#sh spanning-tree inconsistentports
+
+Name                 Interface                Inconsistency
+-------------------- ------------------------ ------------------
+VLAN0001             FastEthernet0/23         Root Inconsistent
+VLAN0001             FastEthernet0/24         Root Inconsistent
+
+Number of inconsistent ports (segments) in the system : 2
+
+Switch#show spanning-tree
+
+VLAN0001
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    32769
+             Address     0014.f2e4.f200
+             This bridge is the root
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
+             Address     0014.f2e4.f200
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+             Aging Time  300 sec
+
+Interface           Role Sts Cost      Prio.Nbr Type
+------------------- ---- --- --------- -------- --------------------------------
+Fa0/11              Desg FWD 19        128.13   P2p
+Fa0/23              Desg BKN*19        128.25   P2p *ROOT_Inc
+Fa0/24              Desg BKN*19        128.26   P2p *ROOT_Inc
+
+Further information:
+https://www.cisco.com/c/en/us/support/docs/lan-switching/spanning-tree-protocol/10588-74.html
+
+___________________________________________________________________________________________________________________________________________________________________________________
+1.2: BPDU Guard
+Portfast enhancement, only works on ports where Portfast is enabled.
+If a BPDU is received on a port the port is put to err-disable state. 
+To enable this port manually reset it or use automatic mechanism.
+Should implement on all ports where Portfast is enabled.
+
+TLDR: Feature to prevent switches connected to "access ports" aka where Portfast is enabled for users.
+
+Disabled by default. Can be enabled globally or on a per interface basis.
+Globally: spanning-tree portfast bpduguard default
+Per port: spanning-tree bpduguard enable
+
+Show commands:
+Verify BPDU Guard is enabled: show spanning-tree summary totals -> If Portfast and BPDU Guard is enable globally
+Error Disable recovery timer: show errdisable recovery 
+
+Examples:
+Switch(config)#interface range fastEthernet 0/23-24
+Switch(config-if-range)#spanning-tree portfast
+Switch(config-if-range)#spanning-tree bpduguard enable
+*Mar  1 00:25:38.923: %LINK-3-UPDOWN: Interface FastEthernet0/23, changed state to up
+*Mar  1 00:25:38.923: %LINK-3-UPDOWN: Interface FastEthernet0/24, changed state to up
+*Mar  1 00:25:39.921: %SPANTREE-2-BLOCK_BPDUGUARD: Received BPDU on port Fa0/23 with BPDU Guard enabled. Disabling port.
+*Mar  1 00:25:39.921: %PM-4-ERR_DISABLE: bpduguard error detected on Fa0/23, putting Fa0/23 in err-disable state
+*Mar  1 00:25:39.930: %SPANTREE-2-BLOCK_BPDUGUARD: Received BPDU on port Fa0/24 with BPDU Guard enabled. Disabling port.
+*Mar  1 00:25:39.930: %PM-4-ERR_DISABLE: bpduguard error detected on Fa0/24, putting Fa0/24 in err-disable state
+*Mar  1 00:25:41.935: %LINK-3-UPDOWN: Interface FastEthernet0/23, changed state to down
+*Mar  1 00:25:41.943: %LINK-3-UPDOWN: Interface FastEthernet0/24, changed state to down
+
+Switch#show interfaces status | i err-disabled
+Fa0/23                       err-disabled 1            auto   auto 10/100BaseTX
+Fa0/24                       err-disabled 1            auto   auto 10/100BaseTX
+
+
+Auto recovery:
+Switch(config)#errdisable recovery cause bpduguard
+Switch(config)#errdisable recovery interval 30
+
+Switch#show errdisable recovery
+ErrDisable Reason            Timer Status
+-----------------            --------------
+arp-inspection               Disabled
+bpduguard                    Enabled
+channel-misconfig (STP)      Disabled
+dhcp-rate-limit              Disabled
+dtp-flap                     Disabled
+gbic-invalid                 Disabled
+inline-power                 Disabled
+l2ptguard                    Disabled
+link-flap                    Disabled
+mac-limit                    Disabled
+loopback                     Disabled
+pagp-flap                    Disabled
+port-mode-failure            Disabled
+pppoe-ia-rate-limit          Disabled
+psecure-violation            Disabled
+security-violation           Disabled
+sfp-config-mismatch          Disabled
+small-frame                  Disabled
+storm-control                Disabled
+udld                         Disabled
+vmps                         Disabled
+psp                          Disabled
+
+Timer interval: 30 seconds
+
+Interfaces that will be enabled at the next timeout:
+
+Interface       Errdisable reason       Time left(sec)
+---------       -----------------       --------------
+Fa0/23                 bpduguard            7
+Fa0/24                 bpduguard            8
+
+Switch#
+*Mar  1 00:31:18.704: %PM-4-ERR_RECOVER: Attempting to recover from bpduguard err-disable state on Fa0/23
+*Mar  1 00:31:18.729: %PM-4-ERR_RECOVER: Attempting to recover from bpduguard err-disable state on Fa0/24
+*Mar  1 00:31:20.784: %SPANTREE-2-BLOCK_BPDUGUARD: Received BPDU on port Fa0/23 with BPDU Guard enabled. Disabling port.
+*Mar  1 00:31:20.784: %PM-4-ERR_DISABLE: bpduguard error detected on Fa0/23, putting Fa0/23 in err-disable state
+*Mar  1 00:31:20.792: %SPANTREE-2-BLOCK_BPDUGUARD: Received BPDU on port Fa0/24 with BPDU Guard enabled. Disabling port.
+*Mar  1 00:31:20.792: %PM-4-ERR_DISABLE: bpduguard error detected on Fa0/24, putting Fa0/24 in err-disable state
+
+Further information:
+www.cisco.com/c/en/us/support/docs/lan-switching/spanning-tree-protocol/10586-65.html
+
+___________________________________________________________________________________________________________________________________________________________________________________
+2: Protecting against loss of BPDUs
+Protecting against unexpected Topology changes.
+
+___________________________________________________________________________________________________________________________________________________________________________________
+2.1 Loop Guard:
+Loop Guard prevents alternate and root ports from becoming designated ports.
+Tracks the BPDU activity on non-designated ports.
+While BPDUs are received the port can behave normally by sending traffic etc.
+If BPDUs go missing the port moves to loop-inconsistent state.
+When BPDUs are receveid again the port is cycled through the STP States.
+
+Implement on the whole switched network.
+
+Disabled by default, Can be enabled globally or on a per port basis.
+Globally: spanning-tree loopguard default
+Per port: spanning-tree guard loop
+    !!!If enabled per port only the offending VLAN will be blocked!!!
+!!!Cannot enabled Loop Guard and Root Guard on the same port!!!
+
+Show commands:
+Show which ports are alternate or root ports: show spanning-tree active
+Verify if Loop Guard is enabled: show spanning-tree summary
+Display link type(must be P2P for Loop Guard): show spanning-tree interface detail
+
+Examples:
+!!! Revisit during Lab session !!!
+
+Further information:
+https://www.cisco.com/c/en/us/support/docs/lan-switching/spanning-tree-protocol/10596-84.html
+
+___________________________________________________________________________________________________________________________________________________________________________________
+2.2: UDLD
+Unidirectional Link Detection
+You can only use this function on fiber SFP or GBIC ports only.
+Aim is to detect unidirectional link before STP moves from Blocking to Forwarding.
+
+Every 15 UDLD frame is sent on the link from one side to determine bidirectional link status. The other side of the link has to send a UDLD echo back.
+The two sides of the link work independently. Both side will send their own UDLD frames and will expect UDLD echo messages.
+Both sides must be configured with UDLD in order to operate properly.
+
+If only one side is enable for UDLD, it will send UDLD frames indefinetly until the other side is enabled for UDLD. Which means that on firts initiation(until both sides are configured) UDLD will not block the port.
+Enable on Fiber SFP/GBIC links.
+
+UDLD has two modes of operation:
+Normal: when unidirectional link is detected, port still works. UDLD marks the port as undetermined state and generates a syslog message
+Aggressive: If echos are not received, aggressive mode will send UDLD frames every second for 8 times. If an echo is not received the port will move to err-disable state.
+
+Enable globally:
+    Normal mode: udld enable
+    Aggressive mode: udld aggressive
+    Custom timer: udld enable message time <seconds>
+!!!Message timer is 15 seconds by default.!!!
+!!!In case timers are mismatched, there's no problem!!!
+
+Enable per port:
+    Normal mode: udld enable
+    Aggressive mode: udld aggressive
+    Disable: udld disable
+
+If port was blocked by UDLD, Port cannot be "bounced" -> udld reset
+
+Show commands:
+UDLD information: show udld
+UDLD information per interface: show udld interface <interface> 
+
+Further information:
+https://www.cisco.com/c/en/us/support/docs/lan-switching/spanning-tree-protocol/10591-77.html
+http://packetlife.net/blog/2011/mar/7/udld/
+
+___________________________________________________________________________________________________________________________________________________________________________________
+3: Disabling STP: BPDU Filter
+
+Disable sending and receiving BPDUs, esentially you can turn off STP for a particular port with this.
+
+Implementation: You must plan this properly!!! And make sure that only a single host is connected to such port where you enable BPDU filtering. 
+Try this at home/in your lab but be extra cautios in a production environment.
+Prerequisite: Portfast
+
+Enable it globally:
+spanning-tree portfast bpdufilter default
+                                default will enable the port on all portfast enabled Interfaces
+Per port:
+    spanning-tree bpdufilter {enable | disable}
+
+Show commands:
+Check if BPDU Filter is enabled: show spanning-tree summary totals
+show spanning-tree interface <interface> detail

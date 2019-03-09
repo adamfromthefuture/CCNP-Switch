@@ -1,0 +1,20 @@
+=================================================
+            Day 27 Agenda
+=================================================
+Notes: Create file on OCG Chapter 9 - Protecting STP
+    Have to revisit: Loop Guard -> Check how can I emulate it.
+Mindmap: STP Enhancements: Cisco STP toolkit and Protecting STP
+    Have to revisit: Toolkit functions have to be added.
+
+Lunch Break!!! 1 hour BRB: 13:00 CET.
+
+Lab: STP -  PVST:
+    1: Discover Current topology
+    2: Modify Root bridge placement per VLAN 
+    3: Implement backup root bridge
+    4: Manipulate path selection
+    5: Manipulate timers
+
+Music today: 
+Follow the DJ Rezidencia channel, they have quiet cool mixes.
+https://www.youtube.com/watch?v=AGAzRmu39yo

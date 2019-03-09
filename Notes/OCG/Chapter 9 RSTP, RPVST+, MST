@@ -1,0 +1,231 @@
+================================================
+            Contents:
+1: RSTP
+    1: Overview
+    2: Port Roles
+    3: Port States
+    4: BPDU
+    5: Convergence
+    6: Synchronization
+    7: Topology changes
+    8: Configuration
+2: RPVST+
+    1: Overview
+    2: Configuration
+3: MST
+    1: Overview
+    2: Configuration
+================================================
+
+1:RSTP
+    1: Overview
+    802.1W, IEEE Standard. Based on 802.1D principles, but with faster convergence time.
+    RSTP is not a standalone protocol!!! It is an extension for various STP flavors, in fact it is an underlying mechanism.
+    To use RSTP you have to use either RPVST+ or MST.
+    Root bridge election goes as normal, preference goes towards lowest Bridge ID.
+
+    2: Port Roles
+    After the root bridge is identified the follwoing port roles are determined.
+    > Root port: The ONE port that has the lowest root path cost. Root bridges will not have any root ports.
+    > Designated port: The switch port on a network segment that has the lowest root path cost.
+    > Alternate Port: Alternative path to the Root Bridge, that is less desirable than the current port/path.
+    > Backup port: redundant port to a segment where other switches are connected to.
+
+    3: Port States
+    Newly introduced port states will describe what happens with incoming frames.
+    > Discarding: All incoming frames are dropped. Combines: Blocking, Listening and Disabled.
+    > Learning: Incoming frames are dropped but MAC addresses are learnt and put in to the MAC address table.
+    > Forwarding: Incoming frames are forwarded or discarded, based on higher levle decisions.
+
+    4: BPDU
+    BPDUs are backward compatible to 802.1D. One field is used in extra: Message Type field.
+    An interactive process is used to negotiate changes between two neighboring switches.
+    BPDUs are sent out every Hello interval. In case 3 BPDUs were not received the neighbor will be presumed down and all information from that neighbor is aged out immediatelly.
+    This reduces convergence time from 20 seconds to 6 seconds.
+
+    STP and RSTP BPDUs can coexist, and if a 802.1D BPDU is received on a port, that port will operate according to 802.1D.
+    Protocol can be change if the Migration Delay expires(3 seconds).
+
+    5: Convergence
+    The state of independence of the switches is overwritten to a uniformity, in which each and every switch has a place in the loop free tree topology.
+
+    To support this uniformity a two stage process is initiated:
+        1: Root bridge is elected. One Switch to Rule Them All.
+        2: Each port is in teh appropriate state.
+
+    When a switch joins the topology, RSTP demands to take decisions based on the port type.
+
+        Port Types:
+        > Edge Port: Is located at the edge of the network, where only a single host is connected to. Portfast concept is followed, the port jumps to Forwarding directly.
+        > Root Port: The port has the best root path cost. Only one can be active at a time. Alternative ports are activated once the root port failes.
+        > Point-to-Point: Any port that connects to an other switch and becomes a designated port.
+    
+    Handshake is implemented to decide the port types. BPDUs are exchanged as proposal<->agreement.
+    If there is an agreement the port becomes a full duplex port.
+    Half duplex port will show that there's a shared medium between switches, so 802.1D is used.
+
+    Change propagation is done via handshake as well. It will generate a handshake wave going towards the edge of the network.
+    During handshakes every switch has to evaluate whether it will introduce a loop or not.
+
+    6: Synchronization
+    Switch revceives a proposal message and then the following process is kicked out:
+        1: If a superior BPDU is received the sender should be the designated switch(The sender port is a designated port). Own port must be a root port.
+        2: Before a switch agrees to anything, it must synch itself to the topology
+        3: All nonedge ports are put to Discarding so no network loops can appear.
+        4: Agreement is sent back to the sender, Sender will know that the switch is synching itself
+        5: Root port is moved to forwarding state
+        6: On nonedge ports in Discarding state a proposal message is sent.
+        7: Agreement message is expected and received.
+        8: Nonedge ports move to Forwarding.
+    
+    Convergence happens at the speed of BPDU transmission, there are no timers invlolved.
+
+    If a designated port doesn't recive an agreemnent(Other side not using RSTP) the port must operate according to 802.1D.
+
+    7: Topology Changes:
+    RSTP detects topology changes when a nonedge port moves to Forwarding state. Link failure is not a trigger.
+    Upon topology change the switch must propagate the changes, TC BPDUs with the TC bit set are sent out on nonedge ports.
+    This process is done until the TC timer expires(2 hello timer).
+    All MAC addresses associated with the nonedge designated ports are flushed, addresses to be relearnt.
+    All neighboring switches receiving TC must flush MAC address table.
+__________________________________________________________________________________________________________________________________________________________________________________
+2: RPVST+
+    1: Overview
+        RSTP enabled PVST+ every VLAN has it's own Spanning Tree Instance.
+    2: Configuration
+    SW1(config)#spanning-tree mode rapid-pvst
+    !!! Plan these changes carefully as the STP process will have to be restarted and that might cause an outage.
+    SW1#show spanning-tree vlan 1
+
+    VLAN0001
+    Spanning tree enabled protocol rstp
+    Root ID    Priority    32769
+                Address     0014.f2cf.8f00
+                Cost        19
+                Port        25 (FastEthernet0/23)
+                Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+    Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
+                Address     0014.f2e4.f200
+                Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+                Aging Time  300 sec
+
+    Interface           Role Sts Cost      Prio.Nbr Type
+    ------------------- ---- --- --------- -------- --------------------------------
+    Fa0/11              Desg FWD 19        128.13   P2p
+    Fa0/19              Altn BLK 19        128.21   P2p Peer(STP)
+    Fa0/20              Altn BLK 19        128.22   P2p Peer(STP)
+    Fa0/23              Root FWD 19        128.25   P2p Peer(STP)
+    Fa0/24              Altn BLK 19        128.26   P2p Peer(STP)
+    P2p Peer(STP) indicates that the other side is running normal PVST+
+
+    !After enabling RPVST+ on SW2
+    SW1#show spanning-tree vlan 1
+
+    VLAN0001
+    Spanning tree enabled protocol rstp
+    Root ID    Priority    32769
+                Address     0014.f2cf.8f00
+                Cost        19
+                Port        25 (FastEthernet0/23)
+                Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+    Bridge ID  Priority    32769  (priority 32768 sys-id-ext 1)
+                Address     0014.f2e4.f200
+                Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+                Aging Time  300 sec
+
+    Interface           Role Sts Cost      Prio.Nbr Type
+    ------------------- ---- --- --------- -------- --------------------------------
+    Fa0/11              Desg FWD 19        128.13   P2p
+    Fa0/19              Altn BLK 19        128.21   P2p Peer(STP)
+    Fa0/20              Altn BLK 19        128.22   P2p Peer(STP)
+    Fa0/23              Root FWD 19        128.25   P2p
+    Fa0/24              Altn BLK 19        128.26   P2p
+__________________________________________________________________________________________________________________________________________________________________________________
+3: MST
+    1: Overview
+    Mapping one or more VLANs to a single STP process.
+
+    Considerations before implementation:
+        Number of STP instances needed
+        Mapping of VLANs to Instances
+
+    MST Region:
+    Figureing out which neighbor is using which STP type.
+    This done by configuring switches into common MST regions.
+
+    Common Region Attributes:
+    > MST Config name(32 Char)
+    > MST config revision(0 to 65535)
+    > MST instance to VLAN Mapping
+        If two switches have the same attributes, they are in the same region. MST BPDUs will contain the attributes, so a switch can compare the received attributes to the local ones.
+        Mapping table is not sent over as it is locally configured. There is no mechanism to control the mapping centrally.
+
+    IST instances:
+        Internal spanning tree instance, that makes the internal network to look like it's one big switch.
+        Runs within MST region.
+
+    2: Configuration
+    SW1(config)#spanning-tree mst configuration
+    SW1(config-mst)#show current
+    Current MST configuration
+    Name      []
+    Revision  0     Instances configured 1
+
+    Instance  Vlans mapped
+    --------  ---------------------------------------------------------------------
+    0         1-4094
+    -------------------------------------------------------------------------------
+    SW1(config-mst)#name CCNP
+    SW1(config-mst)#revision 0
+    SW1(config-mst)#instance 1 vlan 10, 20
+    SW1(config-mst)#show pending
+    Pending MST configuration
+    Name      [CCNP]
+    Revision  0     Instances configured 2
+
+    Instance  Vlans mapped
+    --------  ---------------------------------------------------------------------
+    0         1-9,11-19,21-4094
+    1         10,20
+    -------------------------------------------------------------------------------
+
+    SW1(config)#spanning-tree mode mst
+    SW1#show spanning-tree mst
+
+    ##### MST0    vlans mapped:   1-9,11-19,21-4094
+    Bridge        address 0014.f2e4.f200  priority      32768 (32768 sysid 0)
+    Root          this switch for the CIST
+    Operational   hello time 2 , forward delay 15, max age 20, txholdcount 6
+    Configured    hello time 2 , forward delay 15, max age 20, max hops    20
+
+    Interface        Role Sts Cost      Prio.Nbr Type
+    ---------------- ---- --- --------- -------- --------------------------------
+    Fa0/11           Desg BLK 200000    128.13   P2p
+    Fa0/19           Desg BLK 200000    128.21   P2p Bound(STP)
+    Fa0/20           Desg BLK 200000    128.22   P2p Bound(STP)
+    Fa0/23           Desg FWD 200000    128.25   P2p
+    Fa0/24           Desg FWD 200000    128.26   P2p
+
+    SW2#sh spanning-tree
+
+    MST0
+    Spanning tree enabled protocol mstp
+    Root ID    Priority    32768
+                Address     0014.f2cf.8f00
+                This bridge is the root
+                Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+    Bridge ID  Priority    32768  (priority 32768 sys-id-ext 0)
+                Address     0014.f2cf.8f00
+                Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+    Interface           Role Sts Cost      Prio.Nbr Type
+    ------------------- ---- --- --------- -------- --------------------------------
+    Fa0/11              Desg BLK 200000    128.13   P2p
+    Fa0/21              Desg BLK 200000    128.23   P2p Bound(STP)
+    Fa0/22              Desg BLK 200000    128.24   P2p Bound(STP)
+    Fa0/23              Desg FWD 200000    128.25   P2p
+    Fa0/24              Desg FWD 200000    128.26   P2p
+__________________________________________________________________________________________________________________________________________________________________________________

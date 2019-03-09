@@ -1,0 +1,11 @@
+=================================================
+            Day 34 Agenda
+=================================================
+Follow up/Part2(Day 30) Done
+Mindmap: STP Toolkit Done
+Notes: STP Toolkit(Portfast, etc.) Done
+
+Notes: RSTP/MST Done
+Mindmaps: RSTP/MST Done
+
+Lab excercise, create workbook part as well.
