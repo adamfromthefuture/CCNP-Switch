@@ -1,0 +1,125 @@
+================================================
+            Contents:
+1: Etherchannel Overview
+2: Load Balancing and Traffic distribution
+
+Negotiation protocols
+3: PAgP
+4: LACP
+5: Etherchannel Guard
+6: Tshoot things to look for
+================================================
+
+1: Etherchannel Overview
+    Etherchannel is a link bundling mechanism. 2-8 Physical links can be bundled to a single logical link. 
+    Can be used if:
+        same media type
+        same speed and duplexity settings
+        same configured VLAN 
+        In case a trunk is configured: same native vlan, and all underlying interfaces should be configured as trunk, with the same allowed VLANs.
+        same STP settings
+    
+    Traffic is distributed between the links. This does not mean that the links are equally utilized. Each link operates on it inherent speed but frames are placed on the link defined by the Etherchannel hardware.
+
+    Load balancing: might not be equal. If one link fails, an other one takes its place and it is transparent to the end user.
+
+    Design considerations: take failures scenarios into account!!! Use MEC if possible: Multichassis Etherchannel(MEC) or Virtual Switching System(VSS). 
+___________________________________________________________________________________________________________________________________________________________________________________
+
+2: Load Balancing and Traffic distribution
+    Frames are forwarded on a specific link as a result of a hashing algorithm.
+    Algorithm can use:
+        (Supported on all platforms)
+        src-ip(Bits)
+        dst-ip(Bits)
+        src-dst-ip(XOR)
+        src-mac(Bits) 
+        dst-mac(Bits)
+        src-dst-mac(XOR)
+        (Catalyst 4500, 6500)
+        src-port(Bits)
+        dst-port(Bits)
+        src-dst-port(XOR)
+
+    Bits = hash will generate binary output and based on the number of links used the rightmost 3 bits will be analyzed.
+    XOR = same hash, but in case binary two bits that are the same XOR wil return 0, if the bits are different XOR will return 1.
+
+    Configuring load balancing can happen on a global configuration level, cannot be set per Etherchannel.
+        (config)# port-channel load-balance <method>
+    
+    Check default method before adjusting: show etherchannel load-balance
+    Always adjust the settings based on your traffic pattern and analysis.
+    
+    Handling bcast and mcast: Incoming bcast and mcast is not sent back out over the remaining port channel members.
+___________________________________________________________________________________________________________________________________________________________________________________
+3: PAgP
+    Port Aggregation Protocol
+    Cisco proprietary.
+
+    PAgP packets are exchange to identify the neighbors, and capabilities and compare it to the local settings.
+
+    Advantage: Dinamically configure parameters of the Etherchannel if one of the bundle ports is modified(VLANs, speed and duplexity)
+
+    Modes:
+        On: unconditionally bundles links, no negotiation is used.
+        Auto(Defualt): Passive mode, negotiates Etherchannel if the otherside initiates it.
+        Desirable: Active mode, actively ask neighbors to negotiate.
+    
+    Configure:
+    SW1(config)#interface range fastEthernet 0/23-24
+    SW1(config-if-range)#channel-protocol pagp
+    SW1(config-if-range)#channel-group 1 mode desirable
+    !Channel group number can be between 1-64
+    Creating a port-channel interface Port-channel 1
+    !!!Configuration on both sides has to be identical!!!
+
+    Verification:
+    show etherchannel
+    show etherchannel port
+    show pagp neighbor
+
+    Silent submode:
+        listen to PAgP packets, if none received protocol assumes channel should be built anyways.
+        This is good for connecting non PAgP devices, like servers, Network analyzers etc.
+        If assumed that PAgP packets should be received non-silent option should be used.
+        If PAgP have not received packets on a PAgP interface, interface stays up, but reports to STP that the interface is down.
+        Data can be sent after 45-50 seconds(30 seconds STP timer, 15 secodns Silent Submode delay.)
+___________________________________________________________________________________________________________________________________________________________________________________
+4: LACP
+    Link Aggregation Control Protocol
+    IEEE 802.3 Clause 43.
+
+    LACP packets are exchange to identify the neighbors, capabilities, assigned roles and compare it to the local setting.
+    Switch with the lowest system priority(2 byte prio, 6 byte mac) is allowed to decide which ports are actively participating in an Etherchannel.
+    Ports are selected based on the port priority, the lower the better.
+    Potentioally 16 links can be used, out of this 8 actively, and 8 in standby. 
+
+    Modes:
+        On: unconditionally bundles links, no negotiation is used.
+        Passive mode: negotiates Etherchannel if the otherside initiates it.
+        Active mode: actively ask neighbors to negotiate.      
+
+    Configuration:
+    SW1(config)#lacp system-priority 500
+    !!!Default is 32768, possible values 1-65535!!!
+    SW1(config)#interface range fa 0/23-24
+    SW1(config-if-range)#channel-protocol lacp
+    SW1(config-if-range)#channel-group 1 mode active
+    SW1(config-if-range)#lacp port-priority 1000
+    !!!Default is 32768, possible values 1-65535!!!
+__________________________________________________________________________________________________________________________________________________________________________________
+5: Etherchannel Guard
+    Used for fool proofing, so misconfiguration cannot cause a catastrophic event(Loop, etc.).
+    spanning-tree etherchannel guard misconfig
+
+    If misconfiguration is detected, e.g.: wrong ports are used etherchannel ports will be put to err-disable.
+    Recovering from err-disable can be done by bouncing the logical interface(on both sides).
+    show interface status err-disable
+__________________________________________________________________________________________________________________________________________________________________________________
+6: Tshoot things to look for
+
+> ON mode doesn't negotiate, both sides must be ON
+> Desirable-Desirable, Desirable-Auto will form ethernchannel, Auto-Auto will not.
+> Active-Active, Active-Passive will form etherchannel, Passive-Passive will not.
+> PAgP check silent submode(expect packets or not),
+> Verify ethernchannel state

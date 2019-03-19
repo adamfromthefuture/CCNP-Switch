@@ -1,0 +1,14 @@
+=================================================
+            Day 44 Agenda
+=================================================
+What's up? Done, Had a burnout had to mitigate that.
+Schedule updates: Done, planned exam date moved to end of May, instead of beginning of May.
+New Series:  
+    Home network transformation project. 
+        Including: Mikrotik with multiple SSIDs, PiHole, maybe Squid Proxy, Guest wifi, preparation for IoT. Virtualization(proxmox). 
+        Will start filming this week. Premiere is going to be on Sunday on Youtube.
+    Home "Automation" - AKA how to build things from cheap chineese things, wondering around Domoticz.
+Rant on local post and SFPs
+
+OCG Notes on EtherChannel: Done
+EtherChannel Mindmaps: Done
