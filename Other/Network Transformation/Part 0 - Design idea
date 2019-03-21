@@ -1,0 +1,34 @@
+Why:
+Not fit for the purpose.
+Design flaws, both performance, feature set and security.
+
+Current setup:
+Mikrotik all in one: https://mikrotik.com/product/CRS109-8G-1S-2HnD-IN
+VLAN: 20, 30
+Proxmox
+
+Future setup:
+VLAN:
+    LAN, wired & wireless, unrestricted, secured: MAC level authentication
+    LAB, wired & wireless, restricted
+    Guest, wireless, restricted, captive portal
+    IoT, wireless, restricted
+
+Proxmox:
+    Rework the jumpserver to provide NMS functionality.
+
+PiHole & Squid:
+    Ad blocking, DNS level restrictions.
+    Squid proxy, with SSL intercept.
+
+VPN:
+    Mikrotik or OpenVPN based. Internet gateway for certain profiles, and it should provide stub VPN for others(people using the lab).
+
+How:
+    Design phase: This video + drawing and detailed plans.
+    Interim phases: 
+        Setting up PiHole and/or Squid
+        Jumpserver rework: new VM
+        VLANs and subnets
+    VPN.
+    Cutover after each item is tested.

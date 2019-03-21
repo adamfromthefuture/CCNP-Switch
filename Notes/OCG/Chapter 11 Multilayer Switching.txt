@@ -1,0 +1,94 @@
+================================================
+            Contents:
+1: InterVLAN Routing
+2: Router on a stick
+3: SVI
+4: CEF
+5: FIB
+================================================
+1: InterVLAN Routing
+Switching between different broadcast domains require routing.
+
+InterVLAN routing can be achieved by:
+    1: A router is connected to each VLAN via one physical interface each.
+    2: A router is connected to each VLAN via on physical interface(trunk - Router on a stick)
+    3: Multilayer switch, where routing and switching is combined.
+
+Interface types:
+    L2 interface
+        configure with the switchport interface sublevel command, further configuration is required(access | trunk)
+    L3 interface
+        configure with the no switchport interface sublevel command, furhter configuration is required: ip addres etc.
+    SVI
+
+2: Router on a stick
+Concept, you have a pure L2 switch with multiple VLANs. Since the switch is lacking L3 capabilities, you need a router to connect two VLANs configured on the switch.
+
+               .1
+           +---------+
+           | Router5 |
+           +----+----+
+                |
+                |
+                | Trunk
+                |
+             +--+--+
+       +-----+ SW1 +-----+
+VLAN 10|     +-----+     |VLAN 20
+       |                 |
+    +--+--+           +--+--+
+    | SW2 |           | SW3 |
+    +-----+           +-----+
+ 192.168.10.10     192.168.20.20
+
+Router5:
+interface FastEthernet0/0
+ no ip address
+ duplex auto
+ speed auto
+!
+interface FastEthernet0/0.10
+ encapsulation dot1Q 10
+ ip address 192.168.10.1 255.255.255.0
+!
+interface FastEthernet0/0.20
+ encapsulation dot1Q 20
+ ip address 192.168.20.1 255.255.255.0
+
+Assign the switch interfaces on SW1 to the right VLAN and configure the interfaces for L3 operation on SW2 and 3.
+Verify by pinging from SW2 to SW3 and generate traceroute as well-> Should work if not check routing, or if routing is enabled on Router5, or if trunk is set properly, or if access interfaces are properly configured.
+3: SVI:
+    Switch(ed) Virtual Interface: a logical L3 interface that represents a whole VLAN.
+    SVI IP address will be the default gateway for that particular VLAN, so hosts can communicate via that with outside network.
+    To configure, first make sure that the VLAN in question is assigned to an L2 interface and that interface is UP and functional.
+
+    SVI autostate: SVI can't become active until an L2 port is assigned to that VLAN. So no switching and routing functions can use the SVI before the VLAN is ready.
+        Workaround can be implemented even if L2 is not ready, configure when needed: eg.: port mirroring. 
+        <interface> switchport autostate exclude
+    
+    By creating the SVI interface, the VLAN is not created. You have to enable the SVI to make it functional after the VLAN is created and assigned to an L2 port.
+    Routing between two VLANs on two switches: both switches must have SVIs in both VLANs.
+    IP routing: (config)# ip routing  must be enabled.
+
+    Configuration:
+        SW1#sh run interface vlan 150
+        Building configuration...
+
+        Current configuration : 65 bytes
+        !
+        interface Vlan150
+        ip address 192.168.150.1 255.255.255.0
+        no shut
+        end
+
+        SW1#sh run interface fastEthernet 0/11
+        Building configuration...
+
+        Current configuration : 86 bytes
+        !
+        interface FastEthernet0/11
+        switchport access vlan 150
+        switchport mode access
+        end
+
+___________________________________________________________________________________________________________________________________________________________________________________
