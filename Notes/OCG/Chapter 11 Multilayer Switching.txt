@@ -4,7 +4,6 @@
 2: Router on a stick
 3: SVI
 4: CEF
-5: FIB
 ================================================
 1: InterVLAN Routing
 Switching between different broadcast domains require routing.
@@ -20,7 +19,7 @@ Interface types:
     L3 interface
         configure with the no switchport interface sublevel command, furhter configuration is required: ip addres etc.
     SVI
-
+___________________________________________________________________________________________________________________________________________________________________________________
 2: Router on a stick
 Concept, you have a pure L2 switch with multiple VLANs. Since the switch is lacking L3 capabilities, you need a router to connect two VLANs configured on the switch.
 
@@ -57,6 +56,7 @@ interface FastEthernet0/0.20
 
 Assign the switch interfaces on SW1 to the right VLAN and configure the interfaces for L3 operation on SW2 and 3.
 Verify by pinging from SW2 to SW3 and generate traceroute as well-> Should work if not check routing, or if routing is enabled on Router5, or if trunk is set properly, or if access interfaces are properly configured.
+___________________________________________________________________________________________________________________________________________________________________________________
 3: SVI:
     Switch(ed) Virtual Interface: a logical L3 interface that represents a whole VLAN.
     SVI IP address will be the default gateway for that particular VLAN, so hosts can communicate via that with outside network.
@@ -90,5 +90,101 @@ Verify by pinging from SW2 to SW3 and generate traceroute as well-> Should work 
         switchport access vlan 150
         switchport mode access
         end
+___________________________________________________________________________________________________________________________________________________________________________________
+4: CEF
+Cisco Express Forwarding
 
+Traditional MLS works by the method, route once switch many. The process requires a Route Processor and Switch Processor.
+
+CEF Overview:
+    Hight performance packet forwarding using dynamic lookup tables. Runs by default on Cisco Catalyst. Cisco proprietary.
+
+Elements of CEF:
+    Layer 3 Engine:
+        Routing table and ARP tables
+        Purpose is to build routing information base
+
+
+    Layer 3 Forwarding Engine:
+        FIB and Adjacency table
+        Purpose is switching pakcets based on Layer 3 Engine
+
+    Forwarding Information Base(FIB)
+        Reformatted and ordered list of routing information. With the most specific information first for each destination subnet.
+        Contains routing and forwarding information that the prefix is referenced on, and also contains next hop address and host routes.
+
+        FIB is dynamic, and can be updated by:
+            Layer 3 Engine notices a change in the topology
+            Routing table is updated
+            ARP record changed or aged out
+    
+    After FIB is built packets can be forwarded by the Layer 3 Forwarding Engine, which will start hardware switching process.
+
+    Display FIB entries:
+    show ip cef
+
+    CEF Punt:
+        Packets that can't be hardware switched and sent to the Layer 3 Engine for further processing
+
+        Root causes:
+            Entry cannot be located in the FIB
+            FIB Table is full
+            TTL expired
+            MTU exceeded, means that the packet must be fragmented
+            ICMP redirect received
+            Encapsulation not supported
+            Packets are tunneled, requireing compression or encryption
+            ACL with logging triggered
+            NAT operation
+
+    CEF Optimization:
+        Accelerated CEF(aCEF)
+            CEF distributed accross multiple L3 Forwarding Engines(Individual Linecards)
+            L3 Forwarding Engines only have the capacity to hold portions of the full FIB, if no match is detected for a packet the L3 engine will be queried.
+            CEF is accelerated on the linecards, but not necessarily at a sustained wire speed rate. 
+
+        Distributed CEF(dCEF)
+            CEF is distributed among multiple L3 Forwarding Engines.
+            A central L3 engine maintaing the routing table, and also generates the FIB which is then downloaded to each line card.
+
+    Adjacency table:
+        Portion of the FIB that holds L2 information for every next hop or in other words MAC address of all L2 nodes that are reachable within a single L2 hop.
+
+        CEF Glean state:
+            Happens when an ARP entry doesn't exist for a next hop. L3 Forwarding Engine cannoöt forward the apckets in HW as because of the missing L2 address.
+            show ip cef adjacency glean
+
+        ARP Throttling/throttling adjacency:
+            CEF glean is waiting for the resolution, meanwhile the arp packets to the host are dropped, so the L3 engine doesn't become busy.
+            If an arp reply is not received within 2 seconds throttling is released.
+
+        Adjacency Types:
+            Null:
+                Used to switch packes destined to the Null interface(logical blackhole Ineterface/Null0)
+            Drop:
+                Packets that cannot be forwarded normally are dropped without forwarding. Can be dropped due to:
+                    encapsulation failure, unresolved address, unsupported protocol, no valid route, no valid adjacency, checksum error.
+                show cef drop
+            Discard:
+                Packets must be discarded because of an ACL or policy discard
+            Punt:
+                When packets must be sent to L3 engine for further processing.
+                show cef not-cef-switched
+    
+    Packet rewrite:
+        Packet header information must be rewritten before forwarding.
+        Packet rewrite engine does the following:
+            L2 destination address: change to Next Hop MAC
+            L2 source address: change to outbound MAC
+            L3 IP TTL: decrement by 1
+            L3 IP Checksum: recalculated to include changes in the IP header.
+            L2 Frame Checksum: recalculated to include chnages to the L2 and L3 headers
+
+Configuring CEF:
+        Enabled by default on Catalyst
+        Possible not to disable on some platforms.
+        Can be disabled globally or per interface.
+        Should always be enabled, except when you need to disable CEF for debugging.
+        no ip cef
+        no ip route-cache
 ___________________________________________________________________________________________________________________________________________________________________________________

@@ -1,0 +1,21 @@
+=================================================
+            Day 58 Agenda
+=================================================
+Update the schedule
+
+MLS follow up:
+    Notes done
+    Skip mindmaps, no added benefit
+    Schedule updated
+
+Have to work on:
+Priority 1: Flashcards
+Priority 2: Workbook
+Priority 3: Videos
+
+
+dCEF good to know: 
+https://www.cisco.com/c/en/us/td/docs/ios/12_2/switch/configuration/guide/fswtch_c/xcfcef.html
+
+Free Cool Video Editor, nope not sponsored, I edited some of my videos with this:
+https://www.blackmagicdesign.com/products/davinciresolve
