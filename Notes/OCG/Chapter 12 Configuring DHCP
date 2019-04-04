@@ -18,6 +18,20 @@
     Step 2: DHCP server listens to the BCast. Sends a Broadcast DHCP Offer containing an IP address, Mask, Default Gateway,and the Server IP.
     Step 3: If the client is satisfied with the Offer, it will send out a DHCP Request to formally request the IP address and other settings. This is a BCast message.
     Step 4: DHCP Acknowledge, sent by the server as a Unicast to officially confirm the DHCP Lease. It can happen that this is a BCast message.
+    +--------------+                                     +-------------+
+    |   Client     |                                     | DHCP Server |
+    +--------------+                                     +-------------+
+                    Step 1
+                +--------------->
+
+                                            Step 2
+                <------------------------------------+
+
+                    Step 3
+                +------------------------------------->
+
+                                                Step 4
+                <-------------------------------------+
 
 3: Configuring DHCP Server
     Configure the L3 interface before configuring DHCP Pool.
@@ -76,6 +90,6 @@
     In case a DHCP relay is configured on the switch, it will intercept any DHCP BCast messages and forward it to the server.
     DHCP relay is configured as DHCP helper and multiple ones can be configured.
 
-    
+
 
 ___________________________________________________________________________________________________________________________________________________________________________________
