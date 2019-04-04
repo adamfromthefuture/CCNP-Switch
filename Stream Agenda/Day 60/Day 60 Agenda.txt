@@ -1,0 +1,6 @@
+=================================================
+            Day 60 Agenda
+=================================================
+DHCP:
+    Notes
+        !Have to follow up on, Manual Address Binding, DHCP relay for different subnets.
