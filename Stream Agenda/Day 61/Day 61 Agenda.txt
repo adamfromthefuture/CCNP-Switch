@@ -1,0 +1,21 @@
+=================================================
+            Day 61 Agenda
+=================================================
+Vlog: Self evaluation
+    Haven't studied anything new, due to backlog.
+    Overall progress OK.
+    2 Weeks off was benefitial.
+
+Softbox Arrived
+    Kiyo: Eye of Sauron
+    Softbox: Beacon of Gondor
+
+Follow up on DHCP
+
+Bits n Bytes:
+DHCP helper: https://www.cisco.com/en/US/docs/ios/12_4t/ip_addr/configuration/guide/htdhcpre.html
+DHCP Static Binding: https://networklessons.com/cisco/ccie-routing-switching/dhcp-static-binding-on-cisco-ios
+DHCP helper 2: https://www.freeccnaworkbook.com/workbooks/ccna/configuring-an-ip-dhcp-helper-address
+Music tonight: https://www.youtube.com/watch?v=SGqg_ZzThDU
+
+Note to self: not to use Cisco and sense in the same sentence!

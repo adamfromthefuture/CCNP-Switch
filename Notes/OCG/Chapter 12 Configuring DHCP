@@ -71,10 +71,21 @@
         !After shut no shut 
         *Jan  1 00:19:29.575: %DHCP-6-ADDRESS_ASSIGN: Interface FastEthernet0/0 assigned DHCP address 10.10.100.102, mask 255.255.255.0, hostname Router
 
+        Release/Renew if you are using cisco as a client:
+        Router#release dhcp fastEthernet 0/0
+        Router#renew dhcp fastEthernet 0/0
+    
     Manual address binding !!! Needs further research
         IP address binding can be set manually specific hosts.
         For that you have to configure individual pools
-
+        SW1#sh run | s dhcp
+        ip dhcp pool R5
+        network 10.10.100.0 255.255.255.0
+        default-router 10.10.100.1
+        lease 0 0 2
+        ip dhcp pool R5-Private
+        host 10.10.100.5 255.255.255.0
+        client-identifier 0063.6973.636f.2d30.3031.362e.6337.6266.2e30.3432.652d.4661.302f.30   
 
     DHCP Options:
         Option 43: Location of the WLC
@@ -90,6 +101,41 @@
     In case a DHCP relay is configured on the switch, it will intercept any DHCP BCast messages and forward it to the server.
     DHCP relay is configured as DHCP helper and multiple ones can be configured.
 
+            vlan 100            vlan 200
+    +------+        +----------+        +----------+
+    |      |        |          |        |          |
+    |  R5  +--------+   Sw1    +--------+   Sw2    |
+    |      | 100    |          |        |          |
+    +------+        +----------+        +----------+
+                                    10.10.200.0/24
 
+    !DHCP Server 
+    SW2#sh run | s dhcp
+    ip dhcp excluded-address 10.10.200.0 10.10.200.100
+    ip dhcp pool R5
+    network 10.10.200.0 255.255.255.0
+    default-router 10.10.200.2
+    lease 0 0 2
+    SW2#sh run interface vlan 200
+    interface Vlan200
+    ip address 10.10.200.2 255.255.255.0
+
+    !Transit network
+    SW1
+    interface FastEthernet0/1
+    switchport access vlan 100
+    switchport mode access
+    interface Vlan100
+    no ip address
+    ip helper-address 10.10.200.2
+
+    !DHCP Client
+    Router#sh run int fa 0/0
+    interface FastEthernet0/0
+    ip address dhcp
+    duplex auto
+    speed auto
+
+5: DHCPv6
 
 ___________________________________________________________________________________________________________________________________________________________________________________
