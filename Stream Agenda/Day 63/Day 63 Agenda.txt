@@ -1,0 +1,18 @@
+=================================================
+            Day 63 Agenda
+=================================================
+Working on the workbook:
+    Portfast
+    Uplinkfast
+    Backbonefast
+    Root Guard
+    Loop Guard
+    BPDU Guard
+    BPDU Filter
+    UDLD
+    RPVST+
+    MSTP
+
+Might come back later today to stream on Etherchannel/MLS wokrbook labs.
+New video series scheduled for 18:00 CEST.
+Filming some other stuff today.

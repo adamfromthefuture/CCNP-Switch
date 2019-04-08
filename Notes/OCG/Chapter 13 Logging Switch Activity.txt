@@ -1,0 +1,116 @@
+================================================
+            Contents:
+1: Syslog 
+2: NTP
+================================================
+
+1: Syslog 
+    System message logs, in general it is an audit trail describing important events that happened.
+
+    Format of the IOS Syslog message has the following elements:
+        Timestamp: Date and time of the internal clock, by default it is based on the uptime.
+        Facility Code: begins with a %, and categorizes the software module or function
+        Severity: should be a number between 0-7, the lower the number the more critical the event is.
+        Mnemonic: short tag that categorizes within the facility code
+        Message: description of the event
+
+    Severity:
+        7: Debugging: debug output
+        6: Informational
+        5: Notifications
+        4: Warnings
+        3: Errors
+        2: Critical
+        1: Alerts
+        0: Emergencies
+
+        Threshold consideration: You don't get flooded with unnecessary alerts, but you don't miss any important ones either.
+
+    Logging to console:
+        By default it is turned on and it is set debugging level.
+        Change the severity:
+        logging console <severity {number|keyword}>
+        SW1(config)#logging console critical
+
+        Redirect console messages to telnet or SSH: terminal monitor
+
+    Logging to internal buffer:
+        By default disabled. Switch reserves the buffer from the memory. Be cautios with this as the switch can run out of memory.
+        The buffer has a finite size and operates in a circular fashion: the older messages will be overwritten once there are new messages.
+        As long as the switch is powered up the logging buffer is available.
+
+        Configuration: 
+        logging buffered <severity>
+        logging buffered <size> ! 4096 bytes long by default
+
+    Logging to remote server:
+        Uses UDP 314 port, and the server is capable of simultaneous data conncection.
+        logging host <ip address>
+        logging trap <severity>
+
+        aremeczk@jumpserver:~$ tshark -i ens19
+        Capturing on 'ens19'
+            6 6.234023455 192.168.100.12 → 192.168.100.1 Syslog 162 LOCAL7.NOTICE: 48: *Mar  1 00:36:53.761: %LINEPROTO-5-UPDOWN: Line protocol on Interface GigabitEthernet0/1, changed state to down
+        
+        Not guaranteed, not encrypted. 
+
+        no logging event link-states
+    
+    Adding the timestamp to a syslog message.
+        By defualt the syslog messages are only showing the system uptime.
+        service timestamp
+
+2: NTP
+    Setting up the internal clock:
+        SW1#show clock
+        *00:45:21.952 UTC Mon Mar 1 1993
+    SW1#clock set 20:16:50 8 April 2019
+
+    SW1#show clock
+    SW1#show clock
+    20:16:53.321 CEST Mon Apr 8 2019
+
+    Network Time Protocol:
+        Sync time from a central location. Switches will maintain their internal clock but synchronizes periodically with the server.
+        NTP operates in a hierarchical fashion. An authoritative source can sync to a GPS or an atomic clock.
+        Each of the layers are stratum, stratum indicates the number jumps needed to reach the top level.
+        The authoritative server is stratum 1. Stratum is incremented on every layer.
+
+        NTP modes:
+            Server: synchronizes with the lowest stratum and provides sync option for higher stratum devices
+            Client: device synchronizing its clock with a server 
+            Peer: exchanging time information with other peers.
+            Bcast/Mcast: NTP server that pushes NTP information.
+
+            Configuration:
+                ntp server <ip address> [prefer] [version 1-4 use 4 for IPv6]
+                verification:
+                    show clock
+                    show ntp status
+                    show ntp associations -> GPS: GPS Synch enabled on Peer, ACTS: Atomic clock synch.
+            
+    Securing NTP:
+        Authentication: You can authenticate an NTP server so the client knows it can be trusted. This does not mean that the connection is encrypted.
+        ntp authentication-key <key-number> md5 <string>
+        ntp authenticate
+        ntp trusted-key <key-number>
+        ntp server <ip-address> key <key-number>
+
+        Limit the list of IP addresses that can communicate via NTP to the switch.
+        ntp access-group <option> <acl>
+
+            Options:    
+                serve-only: sync requests are permitted
+                serve: sync and control requests are permitted, device can't sync it's own clock
+                peer: sync and control are permitted, device can sync it's own clock
+                query-only: permit only control queries
+        
+    SNTP: Simple NTP
+        Only operates in a client-mode, it offers a reduced set of options.
+        sntp authentication-key <key-number> md5 <string>
+        sntp authenticate
+        sntp trusted-key <key-number>
+        sntp server <ip-address> key <key-number>
+
+
+___________________________________________________________________________________________________________________________________________________________________________________
