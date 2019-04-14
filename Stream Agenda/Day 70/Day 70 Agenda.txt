@@ -1,0 +1,23 @@
+=================================================
+            Day 68 Agenda
+=================================================
+Vlog:
+    Self evaluation:
+        Haven't studied anything new stuff do to backlog on the videos.
+        Studied other things: Viptela API, how to interact with it.
+        Overall I feel motivated, kinda affraid fo considering an exam date in 3 weeks.
+    Home Network Reanimation Project:
+        Delayed due to studies.
+    Numbers:
+        Twitch: 13 Followers
+        Youtube: 23 Subs
+
+Topics to cover today:
+    IP SLA: Notes
+    Etherchannel: Workbook
+
+Bits and Bytes:
+=================================================
+HODOR savings on Ciscopress and InformIT, buy 1 save 35%, buy 2 55% off
+Origin sales is on
+Worakls for Cercle: https://www.youtube.com/watch?v=QRQwZDWz1Pw

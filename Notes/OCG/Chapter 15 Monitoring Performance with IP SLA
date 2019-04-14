@@ -1,0 +1,105 @@
+================================================
+            Contents:
+1: Overview of IP SLA 
+2: Configuring IP SLA
+================================================
+___________________________________________________________________________________________________________________________________________________________________________________
+1: Overview of IP SLA 
+    Cisco IP Service Level Agreement
+    Gathering realistic information on specific traffic types E2E.
+        Also called as Cisco Response Time Reporter(RTR), or Service Assurance Agent(SAA)
+
+    Can be configured for various tests:
+        For full features you have to configure IP SLA on both the source and the target(responder) as well, but not in all cases.
+        Source: entity that generates traffic and analyzes the results.
+        Target: respondign to incoming traffi, it adds timestamps to packets, and also flags the times the test packets arrived. It is accounting for latency, while the responder is processing the traffic.
+            Clocks must be in synch.
+        
+    Test types:
+        icmp-echo: measuring ICMP Echo response time
+        path-echo: hop-by hop and end to end response time from ICMP
+        path-jitter*: hop by hop jitter over ICMP echo path
+        dns: DNS query response time
+        dhcp: address request response times
+        ftp: ftp response time
+        http: web page retrival time
+        udp-echo: E2E response time for udp
+        udp-jitter*: Jitter over udp
+        tcp-connect: Response time to build a TCP connection
+        *: where you have explicitely configure and IP SLA responder on the target.
+
+    IP SLA Control Protocol:
+        UDP 1967
+        Works like the source informs the target to begin listening on a target port where the tests will actually happen.
+___________________________________________________________________________________________________________________________________________________________________________________
+2: Configuring IP SLA
+    Configuring IP SLA is a 4 step process.
+        1.: Define IP SLA operation
+        2.: Select test type and parameters.
+        3.: Set frequency: define the regular intervals for the lifetime of the test.
+        4.: Schedule the operation
+
+        192.168.100.10                192.168.100.20                 192.168.100.30
+        +---------+                   +---------+                    +---------+
+        |         |     Gi0/1         |         |      Fa0/22        |         |
+        |   SW1   +-------------------+   SW2   +--------------------+   SW3   |
+        |         |                   |         |                    |         |
+        +---------+                   +---------+                    +---------+
+
+        1.: Define IP SLA operation:
+            SW1(config)#ip sla 100
+            SW1(config-ip-sla)#
+
+        2.: Select test type and parameters:
+            SW1(config-ip-sla)#icmp-echo 192.168.100.30 source-ip 192.168.100.10
+            SW1(config-ip-sla-echo)#
+
+        3.: Set frequency: Sends ICMP every 5 seconds, by default it is 60 seconds
+            SW1(config-ip-sla-echo)#frequency 5
+        
+        4.: Schedule the operation
+            SW1(config)#ip sla schedule 100 start-time now life forever
+
+            SW1#show ip sla statistics 100 details
+            IPSLAs Latest Operation Statistics
+
+            IPSLA operation id: 100
+                    Latest RTT: 1 milliseconds
+            Latest operation start time: 13:34:47 UTC Sun Apr 14 2019
+            Latest operation return code: OK
+            Over thresholds occurred: FALSE
+            Number of successes: 185
+            Number of failures: 0
+            Operation time to live: Forever
+            Operational state of entry: Active
+            Last time this entry was reset: Never
+
+            SW1#sh ip sla summary
+
+            IPSLAs Latest Operation Summary
+            ID          Type       Destination       Stats   Return      Last
+                                                    (ms)    Code        Run
+            ----------- ---------- ---------------  ------ ---------- -----------------
+            *100        icmp-echo  192.168.100.30   RTT=1    OK         2 seconds ago
+
+
+            *200        path-echo  192.168.100.30   RTT=1    OK         3 seconds ago
+
+
+            *300        path-jitte 192.168.100.30   RTT=2    OK         1 second ago
+            r
+
+            SW1#sh run |  s sla
+            ip sla 100
+            icmp-echo 192.168.100.30 source-ip 192.168.100.10
+            frequency 5
+            ip sla schedule 100 life forever start-time now
+            ip sla 200
+            path-echo 192.168.100.30 source-ip 192.168.100.10
+            frequency 5
+            ip sla schedule 200 life forever start-time now
+            ip sla 300
+            path-jitter 192.168.100.30 source-ip 192.168.100.10
+            frequency 5
+            ip sla schedule 300 life forever start-time now
+___________________________________________________________________________________________________________________________________________________________________________________

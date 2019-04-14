@@ -1,0 +1,113 @@
+================================================
+            Contents:
+1: SNMP Overview 
+2: SNMP Versions
+3: Best Practices
+4: Configuration
+================================================
+1: SNMP Overview 
+    Simple Network Management Protocol.
+    Architecture of SNMP consist of:
+        SNMP Manager: NMS, that polls and receive data from network devices.
+        SNMP Agent: Process running on a monitored device, gathering data and respond to polls. It can send traps on demand.
+    
+    Management Information Base(MIB)
+        Organized hierarchical structure, collection of variables. Based on ASN 1 - Abstract Syntax Notation
+        Each MIB is referenced by an OID.
+    
+    Gathering Data:
+        SNMP manager send a poll or query with an OID, so the agent will know what data to respond with.
+        Communication is initiated on UDP port 161
+
+        Request types:
+            Get: The value of one MIB variable is required.
+            Get Next: Next value following a Get request.
+            Get Bulk Request: list of values are needed.
+            Set Request: Set a specific MIB to a value.
+            SNMP Trap: Sent by the monitored device on demand.
+            Inform request: Sent by the monitored device on demand, however the SNMP Manager must acknowledgeme the message, by sending the request back.
+        
+    Polls are set on a periodic interval, this means that detecting changes does not happen in real time.
+    An agent can send real time messages, on UDP 162, called SNMP Trap. There's no acknowledgement for the SNMP trap.
+___________________________________________________________________________________________________________________________________________________________________________________
+2: SNMP Versions
+    SNMPv1:
+        Defined by RFC 1157
+        Simple, 1 variable Get/Set and traps are allowed.
+        Access to the client is granted by matching the Commnunity String.
+    
+    SNMPv2:
+        Defined by RFC 1901
+        64 bit variable counters, so you can get the counters from high speed interfaces.
+        Offers bulk requests.
+        Can use traps and inform requests.
+    
+    SNMPv3:
+        Defined by RFC 3410-3415
+        Authenticates SNMP Manager via usernames.
+        Usernames can be organized to groups and access to MIB info is group based.
+        Each group is assigned with a security level:
+            noAuthnoPriv: no authentication, no encryption
+            authNoPriv: authenticated but not encrypted
+            authPriv: authenticated and encrypted
+___________________________________________________________________________________________________________________________________________________________________________________
+3: Best Practices
+    Use SNMPv3 for added security.
+    In case of SNMPv1 or v2, make sure the community string is read only.
+    Configure an ACL to allow a trusted subnet.
+___________________________________________________________________________________________________________________________________________________________________________________
+4: Configuration
+    SNMPv1:
+        SW1(config)#access-list 10 permit 192.168.100.1 0.0.0.0
+        SW1(config)#access-list 10 remark SNMP-ACCESS
+        SW1(config)#access-list 10 deny any
+        SW1(config)#snmp-server community SNMP_Access ro 10
+
+        aremeczk@jumpserver:~$ snmpwalk 192.168.100.111 -v 1 -c SNMP_Access
+        Uptime
+        aremeczk@jumpserver:~$ snmpwalk -c SNMP_Access 192.168.100.111 -v 1 1.3.6.1.2.1.2.2.1.9
+        iso.3.6.1.2.1.2.2.1.9.1 = Timeticks: (207187) 0:34:31.87
+        iso.3.6.1.2.1.2.2.1.9.10001 = Timeticks: (4443) 0:00:44.43
+        iso.3.6.1.2.1.2.2.1.9.10002 = Timeticks: (4140) 0:00:41.40
+        iso.3.6.1.2.1.2.2.1.9.10003 = Timeticks: (4140) 0:00:41.40
+        iso.3.6.1.2.1.2.2.1.9.10004 = Timeticks: (4140) 0:00:41.40
+        iso.3.6.1.2.1.2.2.1.9.10005 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10006 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10007 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10008 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10009 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10010 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10011 = Timeticks: (4443) 0:00:44.43
+        iso.3.6.1.2.1.2.2.1.9.10012 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10013 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10014 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10015 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10016 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10017 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10018 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10019 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10020 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10021 = Timeticks: (4141) 0:00:41.41
+        iso.3.6.1.2.1.2.2.1.9.10022 = Timeticks: (4142) 0:00:41.42
+        iso.3.6.1.2.1.2.2.1.9.10023 = Timeticks: (4810) 0:00:48.10
+        iso.3.6.1.2.1.2.2.1.9.10024 = Timeticks: (4810) 0:00:48.10
+        iso.3.6.1.2.1.2.2.1.9.10101 = Timeticks: (4443) 0:00:44.43
+        iso.3.6.1.2.1.2.2.1.9.10102 = Timeticks: (4140) 0:00:41.40
+        iso.3.6.1.2.1.2.2.1.9.10501 = Timeticks: (0) 0:00:00.00
+
+    SNMPv2:
+        SW1(config)#snmp-server community SNMP_Access RO 10
+        SW1(config)#snmp-server host 192.168.100.1 informs version 2c SNMP_Access
+        SW1(config)#snmp-server host 192.168.100.1 traps version 2c SNMP_Access
+
+    SNMPv3:
+        1.: Create an ACL to restrict access, in this case it can be a named or numbered.
+        2.: Create View for the users to add OIDs
+        3.: Create a server Group, set the name and preferences.
+        4.: Create the username the SNMP Manager will use, configure authentication and encryption if needed.
+        4.: Specify SNMP Manager host information
+
+        SW1(config)#snmp-server group Netadmin v3 priv
+        SW1(config)#snmp-server user monitoring Netadmin v3 auth sha cisco
+        
+___________________________________________________________________________________________________________________________________________________________________________________
