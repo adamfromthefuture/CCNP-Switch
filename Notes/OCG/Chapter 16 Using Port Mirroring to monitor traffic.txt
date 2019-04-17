@@ -1,0 +1,105 @@
+================================================
+            Contents:
+1: SPAN
+2: Local SPAN
+3: Remote SPAN(RSPAN)
+================================================
+1: SPAN
+    Switched Port Analyzer
+    Feature to mirror traffic from one or many switchports/vlan to a destination port.
+    Packet sniffer can be attached to this port, incoming packets are marked so they can be copied to the destination port. -> Packet sniffer receives the exact copy fo the packets.
+   
+    SPAN sources can be:
+        interfaces belonging to the same or different VLAN
+        trunk
+        a VLAN active on a trunk
+        a memmber of an etherchannel
+        a port channel
+        a specific VLAN -> VSPAN, all interfaces belonging to the VLAN will be monitored
+    
+    SPAN direction can be set to:
+        Receive
+        Transmit
+        Both
+
+    Number of SPAN session depends on the hardware. C3750-x=2, C6500=64.
+___________________________________________________________________________________________________________________________________________________________________________________
+2: Local SPAN
+    Source and Destination is located on the same swithch or in the same logical stack.
+
+    Destination: 
+        Interface on the switch or in the logical stack.
+        The frames are mirrored from the source and put to the egress queue to the destination. The original data is handled as normal.
+
+    Speed difference:
+        In case there's a mismatch between the source and destination port speed, if the destination interface is congested the mirrored frames get dropped, original frames are handled normally.
+
+    Configuration:
+            100.20                               100.30
+            +---------+                          +---------+
+            |         |           Fa0/21         |         |
+            |   SW2   +--------------------------+   SW3   |
+            |         |                          |         |
+            +---------+                          +---------+
+                |Fa0/11
+                |
+                |
+                |
+                |
+                |
+                |
+            +----+----+
+            |         |
+            |  jump   |
+            |         |
+            +---------+
+
+        Configuration had to be implemented on SW2 only:
+            SW2(config)#monitor session 1 source interface fastEthernet 0/21 both
+            SW2(config)#monitor session 1 destination interface fastEthernet 0/11
+
+        VLAN Filter, for monitoring specific VLANs only
+            SW2(config)#monitor session 1 filter vlan 1
+
+        By default the destination port can only receive data from the switch, in case data needs to be received from the port configure:
+            SW2(config)#$sion 1 destination interface fastEthernet 0/21 ingress
+
+        To capture VLAN Tagging
+            SW2(config)#$tination interface fastEthernet 0/11 encapsulation replicate
+___________________________________________________________________________________________________________________________________________________________________________________
+3: Remote SPAN(RSPAN)
+    Source and Destination can be on different switches, or different locations.
+    Mirrored data is carried over a special purpose VLAN.
+
+    MAC learning is disabled, to prevent intermediate switches to forward traffic to their real desitnations.
+    STP is running on the VLAN, for loop prevention.
+    RSPAN switches are flooding the mirrored traffic to all ports belonging to the RSPAN VLAN.
+    RSPAN VLAN should be allowed on trunks but should not be assigned to any ports alongt the path.
+
+    Configuration
+    Define the VLAN   
+        SW2(config)#vlan 999
+        SW2(config-vlan)#remote-span
+        SW2(config-vlan)#name SPAN 
+        
+    Make sure the VLAN is pruned through the trunk links.
+
+    Source:
+        SW3(config)#monitor session 1 source interface fa0/4 both
+        SW3(config)#monitor session 1 destination remote vlan 999
+
+    Destination:
+        SW2(config)#monitor session 1 source remote vlan 999
+        SW2(config)#monitor session 1 destination interface fa0/11
+
+    Verification:
+        SW2#sh monitor session 1
+        Session 1
+        ---------
+        Type                   : Remote Destination Session
+        Source RSPAN VLAN      : 999
+        Destination Ports      : Fa0/11
+            Encapsulation      : Native
+                Ingress      : Disabled        
+
+___________________________________________________________________________________________________________________________________________________________________________________

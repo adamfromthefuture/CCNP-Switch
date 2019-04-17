@@ -1,0 +1,13 @@
+=================================================
+            Day 73 Agenda
+=================================================
+There was no stream yesterday.
+
+Today's topic: Port mirroring/SPAN
+    Notes
+
+New keyboard: Tesoro Excalibur Spectrum
+
+Bits and Bytes:
+=================================================
+INE Load Balancing with PVST+: https://www.youtube.com/watch?v=U0SwRYCWANM
