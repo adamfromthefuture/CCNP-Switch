@@ -1,0 +1,27 @@
+From: https://medium.com/devgorilla/how-to-install-docker-on-ubuntu-18-04-495216a16092
+
+Add the GPG Key
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+Add docker repo to repo list
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable edge"
+
+Add new docker to the policy:
+apt-cache policy docker-ce
+
+Install docker:
+sudo apt-get install -y docker-ce
+
+Check docker version:
+docker --version
+
+Check if docker is running:
+sudo systemctl status docker
+
+Run Docker without Root Privileges
+sudo usermod -aG docker $(whoami)
+sudo reboot
+
+Install portainer
+docker volume create portainer
+docker run -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v portainer:/data portainer/portainer

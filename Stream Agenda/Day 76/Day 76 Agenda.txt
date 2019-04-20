@@ -1,0 +1,6 @@
+=================================================
+            Day 76 Agenda
+=================================================
+Create an Ubuntu VM on Proxmox
+Turn that into a docker server
+Build an NMS on top with Libre NMS
