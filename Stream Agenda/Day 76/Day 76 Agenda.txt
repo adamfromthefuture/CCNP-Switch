@@ -2,5 +2,11 @@
             Day 76 Agenda
 =================================================
 Create an Ubuntu VM on Proxmox
+    Make sure that nested virtualization is turned on: https://pve.proxmox.com/wiki/Nested_Virtualization
 Turn that into a docker server
+Install Portainer IO
 Build an NMS on top with Libre NMS
+
+
+Bits 'n Bytes:
+Cheapo Gato:

@@ -1,0 +1,98 @@
+================================================
+            Contents:
+1: Stackwise 
+2: VSS
+3: Supervisor and Routing Processor Redundancy
+4: NSF
+================================================
+
+1: Stackwise 
+    Enables seperate physical switches to be represented as one logical switch.
+    This can be achieved by utilizing a special and port and cable and creating a closed connection loop.
+    Daisy chain fashion, up to 9 switches.
+    Extending the switchzing fabric, so frames are travelling between switches via the closed loop.
+
+    Advantages: 
+        Ring can be broken anytime to add/remove switches from the stack without interrupting operations.
+
+    Master/Slave:
+        Master: control plane, management functionalities.
+        Slave: Switching functions.
+
+    Configuration command:
+    switch <number> priority <1-15>
+        1 is the default
+
+        show switch
+        show platform
+___________________________________________________________________________________________________________________________________________________________________________________
+
+2: VSS
+    In case of modular switches with at least one supervisor engine.
+    Can configure two chassis to work as a logical switch, often VSS pair.
+    One supervisor engine is going to be the primary, the other is going to be in standby.
+    The two chassis must be connected through multiple links that aree configured as Virtual Switch links(VSL)
+___________________________________________________________________________________________________________________________________________________________________________________
+
+3: Supervisor and Routing Processor Redundancy
+    In case of modular platforms. Hardware redundancy within Chassis. 
+    
+    Redundant Switch supervisors:
+        Modular switch platforms can accept two supengines in a single chassis.
+        First to boot up will be the active one the other is going to be the standby one waiting for the active to fail.
+        Active supengine boots fully and provides switching functionalities.
+        The standby supengine will boot to a level based on the configuration mode used. Config modes effects how the supengines handshake and synchronize.
+
+        Route Processor Redundancy(RPR):
+            standby supengine is partially booted
+            on failover standby module must reload all modules in the chassis
+            takes >2 minutes(depends on HW)
+
+        Route Processor Redundancy Plus(RPR+):
+            Standby supengine is booted, Supengine and RP is initialized.
+            No L2 and L3  functions started.
+            On failover, standby finishes init without rebooting linecards.
+            Allows switchport to retain state.
+            Takse >30 sec
+        
+        Stateful Switchover(SSO):
+            Standby supengine is booted and initialized
+            Startup and running config is in sync
+            L2 information is in sync
+            Interface state is in sync, links will not flap in case of failover.
+            Takews >1 sec.
+
+        SRM: Single Router Mode: Two RP is integrated and one is used at the smae time, works with SSO, not with RPR/+
+        DRM: Dual Router Mode: Two RP are active in the same time.
+
+        Configuration:
+        All config changes have to be done on the active one, in case of a new setup both the active and the standby have to be configured.
+        (config)# redundancy
+        (config-red)# mode {rpr | rpr-plus | sso}
+
+        show redundancy states
+            look for active or standby hot
+
+        Confiuguring Supervisor sync:
+        By default the active supengine sync the startup config and the confreg with the standby one.
+        (config)# redundancy
+        (config-red)# main-cpu
+        (config-red-main)# auto-sync{startup-config | config-register | bootvar}
+        return to the default: auto-sync standard
+___________________________________________________________________________________________________________________________________________________________________________________
+
+4: NSF - Nonstop Forwarding
+    Focusing on quickly rebuilding the routing table.
+    Cisco Proprietary
+    Have to be configured on all of the devices where you want this redundancy
+    NFS can gather information from NFS aware neighbors quickly
+    Supported on BGP, OSPF, EIGRP and IS-IS
+    
+    router bgp <as>
+        bgp graceful-start
+
+    router eigrp <as>
+        nsf
+    
+    router ospf <proc>
+        nsf

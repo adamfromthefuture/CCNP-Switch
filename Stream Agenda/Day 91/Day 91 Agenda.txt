@@ -1,0 +1,18 @@
+=================================================
+            Day 91 Agenda
+=================================================
+Notes on HSRP and VRRP
+Update Schedule
+Duet Display, working with support atm
+
+Gear update:
+    1TB SSD instead of the HDD
+
+Video updates:
+    Start editing slightly and create start end and brb screens.
+
+ToDo list:
+Workbook parts on:
+    MLS: Router on a stick and MLS 
+    Network Management Lab: sylog, snmp, ip sla, (r)span
+    L3 HA: HSRP, VRRP, GLBP

@@ -1,0 +1,220 @@
+================================================
+            Contents:
+1: HSRP 
+2: VRRP
+3: GLBP
+================================================
+___________________________________________________________________________________________________________________________________________________________________________________
+1: HSRP 
+Cisco Proprietary protocol, RFC 2281.
+HSRP group: each of the routers providing redundancy for a gateway address. Group number can be selected between 0 and 255. Most platforms allow 16 standby groups.
+HSRP elects one Active and one Standby devices, the rest will be in listening state.
+HSRP hellos are exchanged on a regular basis 3 seconds, the purpose is to monitor existence. Hellos are sent to 224.0.0.2 on UDP 1985.
+
+    HSRP Router Election:
+        Based on the priority value 0-255, default is 100. The higher the better. In a tiebreaker is needed use the highest IP address on the HSRP interface.
+
+    HRSP states:
+        Disabled/Initial: HSRP doesn't run, entered through config change or interface became available.
+        Learn: Router waits for an Active router, waiting for hellos.
+        Listen: Router knows the virtual IP, but it is neither Active or Standby, listenning for hellos.
+        Speak: Router sends hellos and actively participates in the election
+        Standby: Backup router in case the Active fails. Sends hellos.
+        Active: Forwards packets that are sent to the virtual MAC. Sends hellos.
+            Reference: https://www.cisco.com/c/en/us/support/docs/ip/hot-standby-router-protocol-hsrp/10583-62.html#anc18
+        
+    HSRP Timers:
+        Hello Timer: 3 seconds by default
+        Hold Timer: 10 seconds or 3 times the hello. rotuers will wait for missed hellos before the active router is presumed down.
+        In case the hold timer expires the standby router will become active and a new standby router is elected.
+        
+        Keep the number of hellos sent and the time you wish the failure to be detected in balance so the: 1 failure detected efficiently, 2 CPU is not overloaded.
+        In case you configure the timers on the Active router, the configuration will be replicated on the Standby routers.
+
+        Configuration:
+            SW2(config-if)#standby 100 timers 15 45
+            SW3#sh standby | i time
+            Hello time 15 sec, hold time 45 sec
+
+        Preempt:
+            In case of a failover, the was active device comes back up it will not automatically take the active except preempt is configured.
+            SW2(config-if)#standby 100 preempt
+
+    Virtual IP: defined under the standby group:
+        SW2(config-if)#standby 100 ip 192.168.100.100
+    Virtual MAC:
+        0000.0c07.acXX XX-> HSRP Group number in HEX
+
+    Interface tracking:
+        Triggering a failover in case of an interface failure, by reducing the priority with a defined value so the standby router becomes the active one.
+        SW2(config-if)#standby track fastEthernet 0/20 200
+        tracking the interface fa0/20, in case of failure it will reduce the priority with 200
+
+
+    Implementation:
+        SW2(config)#interface vlan 100
+        SW2(config-if)#standby 100 ip 192.168.100.100
+        !Making sure that SW2 will win an election between SW2 and SW3.
+        SW2(config-if)#standby 100 priority 150
+        !Track interface 0/24, in case of failure decrement priority with 100
+        SW2(config-if)#standby 100 track fastEthernet 0/24 100
+        !Preempt will make sure that SW2 will be the active router after the failover is resolved. Have to configure on all routers in the standby group.
+        SW2(config-if)#standby 100 preempt
+
+        SW2#sh standby bri
+                            P indicates configured to preempt.
+                            |
+        Interface   Grp  Pri P State   Active          Standby         Virtual IP
+        Vl100       100  100   Active  local           unknown         192.168.100.100
+
+        SW3(config)#interface vlan 100
+        SW3(config-if)#standby 100 ip 192.168.100.100
+        SW3(config-if)#standby 100 preempt
+        
+        SW3#sh standby bri
+                            P indicates configured to preempt.
+                            |
+        Interface   Grp  Pri P State   Active          Standby         Virtual IP
+        Vl100       100  100   Standby 192.168.100.20  local           192.168.100.100
+
+
+        Failover scenario:
+            *Mar  1 00:45:05.242: %TRACKING-5-STATE: 1 interface Fa0/24 line-protocol Up->Down
+            *Mar  1 00:45:05.929: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/24, changed state to down
+            SW2(config-if)#
+            *Mar  1 00:45:06.945: %LINK-3-UPDOWN: Interface FastEthernet0/24, changed state to down
+            SW2(config-if)#
+            *Mar  1 00:45:07.716: %HSRP-5-STATECHANGE: Vlan100 Grp 100 state Active -> Speak
+            SW2(config-if)#
+            *Mar  1 00:45:19.376: %HSRP-5-STATECHANGE: Vlan100 Grp 100 state Speak -> Standby
+            SW2(config-if)#^Z
+            SW2#sh s
+            *Mar  1 00:46:50.678: %SYS-5-CONFIG_I: Configured from console by console
+            SW2#sh stand
+            SW2#sh standby bri
+                                P indicates configured to preempt.
+                                |
+            Interface   Grp  Pri P State   Active          Standby         Virtual IP
+            Vl100       100  50  P Standby 192.168.100.30  local           192.168.100.100
+
+            SW3#
+            *Mar  1 00:45:07.658: %HSRP-5-STATECHANGE: Vlan100 Grp 100 state Standby -> Active
+            SW3#sh standby bri
+                                P indicates configured to preempt.
+                                |
+            Interface   Grp  Pri P State   Active          Standby         Virtual IP
+            Vl100       100  100 P Active  local           192.168.100.20  192.168.100.100
+
+    Authentication:
+        Plain text:
+            SW2(config-if)#standby 100 authentication text secretpw
+            SW2#
+            *Mar  1 01:00:49.237: %HSRP-4-BADAUTH: Bad authentication from 192.168.100.30, group 100, remote state Active
+            SW2#sh standby bri
+                                P indicates configured to preempt.
+                                |
+            Interface   Grp  Pri P State   Active          Standby         Virtual IP
+            Vl100       100  150 P Active  local           unknown         192.168.100.100
+
+            SW3#                                                                                                                      
+            *Mar  1 01:00:10.993: %HSRP-4-BADAUTH: Bad authentication from 192.168.100.20, group 100, remote state Active             
+            *Mar  1 01:00:49.178: %HSRP-5-STATECHANGE: Vlan100 Grp 100 state Standby -> Active                                        
+            *Mar  1 01:00:54.505: %HSRP-4-BADAUTH: Bad authentication from 192.168.100.20, group 100, remote state Active             
+            SW3#sh standby bri                                                                                                        
+                                P indicates configured to preempt.                                                                   
+                                |                                                                                                    
+            Interface   Grp  Pri P State   Active          Standby         Virtual IP                                                 
+            Vl100       100  100 P Active  local           unknown         192.168.100.100   
+
+
+
+        MD5 Authentication
+            SW3(config-if)#standby 100 authentication md5 key-string 0 supersecret
+        It is possible to use key chains and to rotate keys.
+
+
+    Load Balancing:
+        Set up multiple HSRP groups for the same subnet/vlan and point the clients to the right direction.
+
+    HSRP with IPv6:
+        standby version 2 has to be used.
+
+    Debug and show comamnds:
+    show standby [brief]
+    debug standby
+    show track
+___________________________________________________________________________________________________________________________________________________________________________________
+2: VRRP
+    RFC 2338
+    Similar to HSRP:
+        Active router -> Master router: the one with the Highest priority
+        Standby router -> Backup state
+    
+    VRRP Group numbers: 0 - 255
+    VRRP priority: 1 - 254, default 100
+    Virtual Router MAC: 0000.5e00.01XX XX being 2 digit hex number of the VRRP group nuimber.
+    
+    VRRP advertisements are sent every 1 seconds to 224.0.0.18 IP proto 112. Backup routers can learn advertisement intervals.
+
+    Not supported consistently on all Cisco platforms.
+
+    Same commands as on HSRP, use vrrp instead of standby.
+___________________________________________________________________________________________________________________________________________________________________________________
+3: GLBP
+    Gateway Load Balancing Protocol
+    Cisco Proprietary Protocol
+
+    Was created to overcome the problems of HSRP.
+    Multiple routers are assigned to a GLBP group and offer load balancing features.
+
+    AVG: Active Virtual Gateway
+        Controller like entity.
+        It is elected based on the higher priority. In case you have matching priority values, the tiebreaker is going to be the highest IP addres in the group.
+        Role of AVG is to assign virtual MAC addresses to the routers in the GLBP group. You can assign virtual MAC addresses up to 4 per router.
+        AVG will reply for ARP requests from clients looking for the default gateway with the virtual MAC based on the algorithm used.
+
+    AVF: Active Virtual Forwarder
+        Got a virtual MAC assigned from the AVG and serving a set of clients.
+        Forwarding traffic on its virtual MAC.
+        In case the AVF fails another AVF for other clients can take over as the new device can masqueared the old MAC address. Not efficient on the long run so two timers re introduced
+            Redirect timer:
+                Maintained by the AVG.
+                Default is 600 seconds.
+                Time delay between a  forwarder failing on the network and the AVG assuming that the forwarder  will not return. Virtual MAC is still be in use by a differnet router.
+
+            Timeout timer: 
+                4 hours 14400 seconds.
+                AVG assumes that the AVF will not return.
+                The old MAC and the Virtual Forwarder is flushed from the GLBP group.
+                Client ARP cache must be refreshed.
+
+    Virtual MAC: 
+        0007.B4XX.XXYY
+        XXXX= 6 times 0 bits and 10 bits GLBP Group numter
+        YY= 8 bit value for the virtual forwared number.
+
+    Preempt: 
+        Works just like with HSRP. After the recovery of the was Active device the router can become Active again.
+
+    Monitoring:
+        AVG send hellos every 3 seconds, and expects to hear hellos from the group members.
+        If hellos are not received with the hold time(10 sec) the peer is presumed to be dead.
+    
+    Weighting:
+        Can be used to determine which router will become the AVF for a virtual MAC in the group.
+        Maximum weight value is a number between 1-254
+        As specific interfaces go down the weight is decreased by a configured amount.
+
+    AVF Criteria:
+        Using thresholds to determine if a router can be an AVF or not. 
+        Lower threshold will release the router from becoming an AVF
+        Higher threshold will allow the router to become an AVF.
+        Default max weight is 100   
+
+    Load Balancing:
+        Deterministic fashion.
+        AVG informs the AVFs which Virtual MAC to use and the algorithm will determine the actual load balancing.
+
+            Round-robin: load is distributed evenly. (Default method)
+            Weighted: interface weighting determines the proportion of the traffic. higher the traffic the more frequent the load is.
+            Host dependent: each client always receives the same virtual MAC.

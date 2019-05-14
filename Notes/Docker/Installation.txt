@@ -25,3 +25,53 @@ sudo reboot
 Install portainer
 docker volume create portainer
 docker run -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v portainer:/data portainer/portainer
+
+
+Install libreNMS:
+docker volume create librenms_data
+
+
+
+docker run \
+    -d \
+    -h librenms \
+    -p 80:80 \
+    -e APP_KEY=vUAnNxGr37jhXavOiUvkVVX4fhWlaLNB1StbpwbBbFI= \
+    -e DB_HOST=172.17.0.3 \
+    -e DB_NAME=librenms \
+    -e DB_USER=librenms \
+    -e DB_PASS=cisco1234 \
+    -e BASE_URL=http://localhost \
+    --link mysql01:db \
+    -v /data/logs:/opt/librenms/logs \
+    -v /data/rrd:/opt/librenms/rrd \
+    --name librenms \
+    jarischaefer/docker-librenms
+
+
+
+    ALTER USER 'root'@'%' IDENTIFIED BY 'cisco1234';
+
+GRANT ALL PRIVILEGES ON *.* TO 'librenms'@'%' IDENTIFIED BY 'cisco1234';
+
+
+CREATE USER 'librenms'@'%' IDENTIFIED BY 'cisco1234';
+GRANT ALL PRIVILEGES ON * . * TO 'librenms'@'%';
+
+ALTER USER 'librenms'@'%' IDENTIFIED WITH mysql_native_password BY 'cisco1234';  
+
+
+docker run \
+    -d \
+    -h librenms \
+    -p 80:80 \
+    -e APP_KEY=a/D1iSYcQ1BF9/kbbNpAITK2vHaAE37fxeyOe4oaM0g= \
+    -e DB_HOST=172.17.0.3 \
+    -e DB_NAME=librenms \
+    -e DB_USER=librenms \
+    -e DB_PASS=cisco1234 \
+    -e BASE_URL=http://localhost \
+    -v /data/logs:/opt/librenms/logs \
+    -v /data/rrd:/opt/librenms/rrd \
+    --name librenms \
+    jarischaefer/docker-librenms
