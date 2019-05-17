@@ -1,0 +1,53 @@
+================================================
+            Contents:
+1: VLAN ACLs 
+2: Private VLANs
+3: Securing Trunks(DTP and VLAN hopping)
+================================================
+___________________________________________________________________________________________________________________________________________________________________________________
+1: VLAN ACLs 
+    RACLs only filter traffic packets between VLANs.
+    VLAN ACLs can filter trafffic inside the VLAN.
+    ACtions are permit, deny and redirect. Configured in a route map fashion.
+
+    Configuration:
+    Create an ACL:
+        SW1(config)#access-list 100 permit ip host 192.168.100.1 host 192.168.100.20
+    Create the VLAN Access map:
+    SW1(config)#vlan access-map hundred 10
+    !10 is the sequence number, order is based on the sequence number.
+    SW1(config-access-map)#match ip address 100
+    !Can match on MAC acl too.
+    SW1(config-access-map)#action forward
+    !action can be forward or drop
+
+    Connect the VLAN ACL and the vlan(s)
+    SW1(config)#vlan filter hundred vlan-list 1
+
+    MAC ACL reference: https://www.cisco.com/c/en/us/td/docs/switches/lan/catalyst3560/software/release/15-0_1_se/configuration/guide/scg3560/swacl.pdf#page=28&zoom=100,0,392
+___________________________________________________________________________________________________________________________________________________________________________________
+
+2: Private VLANs
+    Microsegmentationception.
+    A VLAN can be logically associated with a secondary VLAN.
+    A host can be configured with a primary VLAN and can communicate on it, and it have a secondary VLAN as well, but the rules for that differ based on the type.
+
+    Type:
+        Isolated: Isolated, except on the primary VLAN. Can't communicate on the secondary VLAN.
+        Community: Can communicate on the primary VLAN, can communicate on the secondary VLAN and can communicate to others in that VLAN. Can't communicate to other secondary VLANs.
+
+    All secondary VLANs must be associated with a primary VLAN.
+    VTP doesn't propagate this information as it is locally significant. In case PVLANs are used throughout the network all participating must be configured accordingtly.
+
+    Port type:
+        Promiscuous: Connects to a gateway. The rules of PVLANs are ignored. Can communicate to any primary and secondary VLAN.
+        Host: Connects to a regular host. Communicates only to promiscuous ports oor ports in the same community VLAN.
+
+
+    The setup: 
+        VLAN 1 primary VLAN.
+        VLAN 10 Router5 and Mikrotik
+        VLAN 20 Community: Router5, Mikrotik.
+
+        STOP HERE, Should look at it more till sunday.
+        
