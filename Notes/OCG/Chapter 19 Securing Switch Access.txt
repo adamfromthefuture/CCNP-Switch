@@ -1,0 +1,118 @@
+================================================
+            Contents:
+1: Port Security 
+2: Dot1X
+3: Storm Control
+4: Best practices
+================================================
+___________________________________________________________________________________________________________________________________________________________________________________
+1: Port Security 
+    Control port access based on the MAC address.
+    SW1(config)#interface fastEthernet 0/11
+    SW1(config-if)#switchport port-security
+
+    It is possible to specify the number of dynamically learnt MAC addresses, the default is 1 and the highest possible value is 1024:
+    In case of user access ports, count with an extra MAC address for an IP Phone.
+    SW1(config-if)#switchport port-security  maximum 2
+
+    Aging is possible, but not set by default.
+    By default learnt MAC addresses are put in the CAM table.
+    It is possible to make a learnt address persistent. This will save the mac address in the running configuration.
+    SW1(config-if)#switchport port-security mac-address sticky
+    interface FastEthernet0/11
+    switchport mode access
+    switchport port-security maximum 2
+    switchport port-security
+    switchport port-security mac-address sticky
+    switchport port-security mac-address sticky ba9a.dbb0.9512
+
+    In case the switch reloads the mac the will have to be learnt again.
+
+    It is possible to assign an allowed MAC address to an interface manually.
+    SW1(config-if)#switchport port-security mac ba9a.dbb0.9511
+    Replaced the last charecter of the MAC address with a different one on purpose so a violation happens.
+    *Mar  1 00:19:40.579: %PM-4-ERR_DISABLE: psecure-violation error detected on Fa0/11, putting Fa0/11 in err-disable state
+    *Mar  1 00:19:40.579: %PORT_SECURITY-2-PSECURE_VIOLATION: Security violation occurred, caused by MAC address ba9a.dbb0.9512 o port FastEthernet0/11.
+
+    In case the number of the statically assigned MAC addresses are lower than the maximum amount, dynamically learnt MAC addresses can be used.
+
+    In case of violation there are three ways port security can react:
+        Shutdown: the default one, puts the interface into errdisablemode.
+        Restrict: port stays up, all packet from the violating MAC address are dropped and keeps a count of the violating packets. Can send an SNMP trap or a Syslog Message
+        Protect: port stays up, packets are dopped but no records are left.
+    SW1(config-if)#switchport port-security violation restrict
+
+    Verification commads:
+    show port security[interface]
+    show interfaces status err-disabled
+___________________________________________________________________________________________________________________________________________________________________________________
+2: Dot1X
+    IEEE Standard
+    Combination of AAA authentication and port-security
+
+    When configured a switchport is not enabled until a user has authenticated with the switch on the port.
+
+    Terminology:
+        Supplicant: Client, trying to authenticate
+        Authenticator: The switch where the Client tries to authenticate on.
+        Authentication Server: Validating authentication attempt.
+
+    To work properly, Switch and the PC must support 802.1x using Extensible Authentication Protocol over LAN(EAPOL).
+    EAPOL is an L2 Protocol
+
+    In case the PC supports .1x but the switch doesn't, the PC will communicate normally and abandons using the protocol.
+    On the other way around the switchport will be in unauthorized state and will drop traffic.
+    
+    Both the switch and the client can ijnitiate authentication.
+    Dot1X only supports Radius.
+
+    Configuration:
+        Step 1: Enable AAA
+            SW1(config)#aaa new-model
+            new model means that the authentication will use method list
+        Step 2: define radius server
+            SW1(config)#radius-server host 192.168.100.1 key 0 cisco
+        Step 3: create authentication method
+            SW1(config)#aaa authentication dot1x default group radius
+        Step 4: Enable Dot1X
+            SW1(config)#dot1x system-auth-control
+        Step 5: Configure the ports to use dot1x
+            SW1(config-if)#authentication port-control {auto | force-authorized | force-unauthorized}
+                force-authorized: Default state, no authentication is required. 
+                force-unauthorized: forced to never authorize, port cannot move to authorized state.
+                auto: uses dot1x to exchange packets to move from unauthorized to authorized.
+        Step 6: Allow multiple hosts on an interface.
+            SW1(config-if)#authentication host-mode multi-host
+___________________________________________________________________________________________________________________________________________________________________________________
+3: Storm Control
+    To avoid issues coming from frames that have a destination MAC address which is either not specific or cannot be located.
+        Broadcast frames
+        Multicast frames
+        Unknown Unicast frames
+    Traffic where frames have to be flooded.
+
+
+    Storm control is configured per interface and per protocol:
+        SW1(config-if)#storm-control broadcast level 90 89
+        Can be specified in percentage, bits per sec or packets per sec.
+
+    Specify an action storm control should take upon violation.
+    SW1(config-if)#storm-control action shutdown
+        shutdown to put the interface to err-disabled or trap to send a message 
+
+    *Mar  1 01:30:54.121: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/12, changed state to down
+    *Mar  1 01:30:55.120: %LINK-3-UPDOWN: Interface FastEthernet0/12, changed state to down
+___________________________________________________________________________________________________________________________________________________________________________________
+4: Best practices
+    Secure passwords: use enable secrets instead of enable passwords
+    Service password encryption.
+    Use banners: warn unauthorized users. banner motd
+    Secure the web interface: TURN IT OFF. no ip http server, ip http secure server
+    Secure console access
+    Secure VTY access, with an ACL and remote authentication
+    Use SSH
+    Secure SNMP
+    Shutdown unused ports
+    Secure STP: like BPDUGuard
+    Turn off CDP and LLDP, enable only on devices where the connected devices can be trusted.
+___________________________________________________________________________________________________________________________________________________________________________________

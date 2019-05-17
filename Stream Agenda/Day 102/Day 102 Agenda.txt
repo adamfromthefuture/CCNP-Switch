@@ -1,0 +1,8 @@
+=================================================
+            Day 102 Agenda
+=================================================
+Switch Security. OCG notes
+Update tracker
+
+L3 HA: Mindmap has to be done
+GLBP: Configuration and verification
