@@ -7,4 +7,6 @@ Self evaluation: Motivated, making progress.
 Sunday?: GLBP on devnet and HA mindmap.
 
 VLAN Security.
+PVLAN: Follow up on sunday.
+
 
