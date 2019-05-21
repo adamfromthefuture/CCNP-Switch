@@ -43,11 +43,124 @@ ________________________________________________________________________________
         Promiscuous: Connects to a gateway. The rules of PVLANs are ignored. Can communicate to any primary and secondary VLAN.
         Host: Connects to a regular host. Communicates only to promiscuous ports oor ports in the same community VLAN.
 
+    Community ports:
+        Your company is hosting servers  for two clients. You have one subnet and one primary VLAN available. You want to make sure that the communication between hosts for the same customer are possible.
+    Isolated ports.
+        Your company is hosting servers  for two clients. You have one subnet and one primary VLAN available. You want to make sure that the communication between hosts are not possible, except between the host and the gateway.
+    Promiscuous Ports: 
+        Your company provide internet breakout for multiple customers. Can be done via SVI or L2 ports.
 
-    The setup: 
-        VLAN 1 primary VLAN.
-        VLAN 10 Router5 and Mikrotik
-        VLAN 20 Community: Router5, Mikrotik.
+    Community ports configuration:
+    !Create Community VLANs
+        SW1(config)#vlan 10
+        SW1(config-vlan)#private-vlan community
+        SW1(config)#vlan 20
+        SW1(config-vlan)#private-vlan community
+    !Create primary VLAN, and add associated VLANs.
+        SW1(config)#vlan 100
+        SW1(config-vlan)#private-vlan primary
+        SW1(config-vlan)#private-vlan association 10,20
 
-        STOP HERE, Should look at it more till sunday.
+    !Verify
+        SW1#sh vlan private-vlan
+
+        Primary Secondary Type              Ports
+        ------- --------- ----------------- ------------------------------------------
+        100     10        community
+        100     20        community
+
+    !Assign interfaces
+    SW1(config)#interface range fastEthernet 0/9-10
+    SW1(config-if-range)#switchport mode private-vlan host
+    SW1(config-if-range)#switchport private-vlan host-association 100 10
+    SW1(config)#interface fastEthernet 0/6
+    SW1(config-if)#switchport mode private-vlan host
+    SW1(config-if)#switchport private-vlan host-association 100 20
+
+    SW1#sh vlan private-vlan
+
+    Primary Secondary Type              Ports
+    ------- --------- ----------------- ------------------------------------------
+    100     10        community         Fa0/9, Fa0/10
+    100     20        community         Fa0/6
+
+    Isolated ports configuration:
+    SW1(config)#vlan 20
+    SW1(config-vlan)#private-vlan isolated
+
+    SW1#sh vlan private-vlan
+
+    Primary Secondary Type              Ports
+    ------- --------- ----------------- ------------------------------------------
+    100     10        community         Fa0/9, Fa0/10
+    100     20        isolated          Fa0/6
+
+    Promiscuous ports configuration:
+    SVI:
+        SW1(config)#interface vlan 100
+        SW1(config-if)#private-vlan mapping 10,20
+
+    L2:
+        SW1(config)#interface fastEthernet 0/1
+        SW1(config-if)#switchport mode private-vlan promiscuous
+        SW1(config-if)#switchport private-vlan mapping 100 10
+        SW1(config-if)#switchport private-vlan mapping 100 20
+
+        SW1#sh vlan private-vlan
+
+        Primary Secondary Type              Ports
+        ------- --------- ----------------- ------------------------------------------
+        100     10        community         Fa0/1, Fa0/9, Fa0/10
+        100     20        isolated          Fa0/1, Fa0/6
+
+        SW1#sh vlan private-vlan type
+
+        Vlan Type
+        ---- -----------------
+        10   community
+        20   isolated
+        100  primary
+___________________________________________________________________________________________________________________________________________________________________________________
+3: Securing Trunks(DTP and VLAN hopping)
+    DTP:
+        Can negotiate a port to become a trunk. Risk is that an attacker can gain access to a trunk link and the vlans terminated on the switch.
+
+        Evasion:
+        SW1(config-if)#switchport mode access
+        SW1(config-if)#switchport mode trunk
+    
+    VLAN hopping:
+        An attacker on one VLAN can create frames with spoofed 802.1Q VLAN tags, packets end up in the spoofed VLAN.
+        Exploit can be achieved if:
+            attacker is connected to an access port
+            switch has at least on 802.1Q trunk
+            attacker's VLAN is the native VLAN
         
+        Evasion:
+            !Create bogus VLAN, configure native VLAN as the bogus VLAN. Remove bogus vlan from the allowed vlans.
+                SW1(config)#vlan 900
+                SW1(config-vlan)#name BLACKHOLE-DONOT-USE
+
+                SW1(config)#interface fa0/12
+                SW1(config-if)#switchport trunk encapsulation dot1q
+                SW1(config-if)#switchport mode trunk
+                SW1(config-if)#switchport trunk native vlan 900
+                SW1(config-if)#switchport trunk allowed vlan remove 900
+
+                SW1#sh interfaces trunk
+
+                Port        Mode             Encapsulation  Status        Native vlan
+                Fa0/12      on               802.1q         trunking      900
+
+                Port        Vlans allowed on trunk
+                Fa0/12      1-899,901-4094
+
+                Port        Vlans allowed and active in management domain
+                Fa0/12      1,10,20,100
+
+                Port        Vlans in spanning tree forwarding state and not pruned
+                Fa0/12      none
+
+            !Trunks will add tags to the frame for the native vlan. Double tagging attack will not work as the switch will not remove the first tag.
+            SW1(config)#vlan dot1q tag native
+___________________________________________________________________________________________________________________________________________________________________________________
