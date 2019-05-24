@@ -1,0 +1,171 @@
+================================================
+            Contents:
+1: DHCP Snooping
+2: IP Source Guard
+3: DAI
+================================================
+
+___________________________________________________________________________________________________________________________________________________________________________________
+1: DHCP Snooping
+    Why we need DHCP Snooping?
+        An attacker can build a rogue DHCP server inside the network.
+        That can overtake the place of the legitimate DHCP server, by replying to client requests.
+        The attacker can provide a rogue gateway and DNS address, can intercept those packets and analyze them.
+        Sort of a man in the middle attack.
+    
+    Enabling DHCP Snooping:
+        Classify switchport:
+            Trusted: legitimate DHCP servers attached to the port. All DHCP messages are allowed.
+                Allowed ingress messages: Offer, ACK
+            Untrusted:(Default) all the other hosts. Intercept DCHP requests, drops DHCP replies silently. Only puts the violating port to err-disable if the rate limit is reached. (Written wrong in the OCG)
+                Allowed ingress messages: Discover, Request/Inform, Decline, Release
+    DHCP Snooping will maintain a database, will contain MAC, IP, lease time, etc. Also keeps track of completed DHCP bindings.
+
+    Configuration:
+        !Enable globally
+        SW1(config)#ip dhcp snooping
+        !Enable for specified VLANs
+        SW1(config)#ip dhcp snooping vlan <vlan-range>
+
+        By default DHCP Option 82 is enabled by DHCP snooping.(Relay Agent Information) Can cause issues.
+        Switch intercepts the DHCP Request, adds its own MAC addres to it and valiadtes the reply based on the added values.
+        !Turn it off.
+        SW1(config)#no ip dhcp snooping information option 
+
+    Verification:
+        SW1#sh ip dhcp snooping
+        Switch DHCP snooping is enabled
+        DHCP snooping is configured on following VLANs:
+        100
+        DHCP snooping is operational on following VLANs:
+        100
+        Smartlog is configured on following VLANs:
+        none
+        Smartlog is operational on following VLANs:
+        none
+        DHCP snooping is configured on the following L3 Interfaces:
+
+        Insertion of option 82 is disabled
+        circuit-id default format: vlan-mod-port
+        remote-id: 0014.f2e4.f200 (MAC)
+        Option 82 on untrusted port is not allowed
+        Verification of hwaddr field is enabled
+        Verification of giaddr field is enabled
+        DHCP snooping trust/rate is configured on the following Interfaces:
+
+        Interface                  Trusted    Allow option    Rate limit (pps)
+        -----------------------    -------    ------------    ----------------
+        FastEthernet0/1            yes        yes             unlimited
+        Custom circuit-ids:
+        SW1#sh ip dhcp snooping
+        SW1#sh ip dhcp snooping bi
+        SW1#sh ip dhcp snooping binding
+        MacAddress          IpAddress        Lease(sec)  Type           VLAN  Interface
+        ------------------  ---------------  ----------  -------------  ----  --------------------
+        00:50:79:66:68:03   192.168.100.3    3577        dhcp-snooping   100   FastEthernet0/10
+        00:50:79:66:68:02   192.168.100.2    3539        dhcp-snooping   100   FastEthernet0/9
+        Total number of bindings: 2
+
+    Rate limiting DHCP requests.
+        Can be limited on a per interface basis.
+        Prevents exhausting the DHCP pool.
+        SW1(config-if)#ip dhcp snooping limit rate 1
+
+        *Mar  1 00:26:57.323: %DHCP_SNOOPING-4-DHCP_SNOOPING_ERRDISABLE_WARNING: DHCP Snooping received 1 DHCP packets on interface Fa0/9
+        *Mar  1 00:26:57.323: %DHCP_SNOOPING-4-DHCP_SNOOPING_RATE_LIMIT_EXCEEDED: The interface Fa0/9 is receiving more than the threshold set
+        *Mar  1 00:26:57.323: %PM-4-ERR_DISABLE: dhcp-rate-limit error detected on Fa0/9, putting Fa0/9 in err-disable state
+        *Mar  1 00:26:58.330: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/9, changed state to down
+        *Mar  1 00:26:59.336: %LINK-3-UPDOWN: Interface FastEthernet0/9, changed state to down
+
+Useful articles:
+    https://packetpushers.net/ccnp-studies-configuring-dhcp-snooping/
+    https://neckercube.com/index.php/2017/08/05/cisco-ccnp-switch-topics/#DHCP_snooping
+
+INE CCNP Workbook:
+7.1, 7.2
+___________________________________________________________________________________________________________________________________________________________________________________
+2: IP Source Guard
+    Address spoofing, kind of a Denial of Service attack.
+    The source address of spoofed packets is not legitimate or doesn't exist.
+
+    Example: VLAN 10  with 10.10.10.0/24 VLAN20 forge packets to arrive on VLAN20.
+
+    Detect and prevent address spoofing attacks, even in the same subnet.
+    Based on the DHCP snooping database or static IP bindings.
+
+    Validation:
+        Source IP must be identical, to the one learnt by DHCP snooping or by static bindings. Dynamic Port ACL is created automatically to filter traffic,
+        Source MAC must be identical, to the MAC learnt on the interface and learnt by DHCP snooping. Port security is used to filter traffic in this case.
+    If violation happens the switch drops the packet.
+
+    Static bindings: 0050.7966.6803
+    SW1(config)#ip source binding 0050.7966.6803 vlan 100 192.168.100.10 interface fa0/10
+    !Enable source guard per interface.
+    SW1(config-if-range)#ip verify source    
+
+show ip verify source 
+show ip source binding
+___________________________________________________________________________________________________________________________________________________________________________________
+3: Dynamic ARP inspection (DAI)
+    Attacker listens to an arp request and replies with a crafted ARP reply.
+    The idea is to place the attacker between hosts and valid destinations.
+    Attacker intercepts packets analyzes them and forwards normally, the whole process is transparent for the end users.
+
+    This type of attack is ARP poisoning or ARP spoofing.
+
+
+Switchports are classified:
+    trusted: no inspection, going towards other switches and trusted equipment.
+    untrusted: intercept and inspect ARP packets. Checking and validating MAC and IP addresses to trusted sources(static and dynamic entires from the DHCP snooping DB). Default.
+
+    If violation occours packets are dropped and a log message is created.
+
+    Configuration:
+        !Enable per VLAN 
+        SW1(config)#ip arp inspection vlan 100
+        !Configure trusted interfaces.
+        SW1(config-if)#ip arp inspection trust
+
+    *Mar  1 01:02:15.312: %SW_DAI-4-DHCP_SNOOPING_DENY: 1 Invalid ARPs (Res) on Fa0/2, vlan 100.([b869.f427.a3ff/192.168.100.1/0050.7966.6802/192.168.100.2/01:02:14 UTC Mon Mar 1 1993])
+
+    Static entries:
+    Use when there's no DHCP.
+    SW1(config)#arp access-list trusted
+    SW1(config-arp-nacl)#permit ip host 192.168.100.10 mac b869.f427.a3ff ffff.ffff.ffff
+
+    Assign ARP acl to DAI
+    SW1(config)#ip arp inspection filter trusted vlan 100
+
+    Further validation:
+    src-mac: check the MAC in the ethernet header and compare to the sender MAC in the ARP reply.
+    dst-mac: check the destination MAC against the target MAC
+    ip: check the sender IP in all ARP requests. Check the sender IP against the target IP in all ARP replies.
+
+    SW1(config)#ip arp inspection validate dst-mac ip src-mac
+
+    SW1#sh ip arp ins
+
+Source Mac Validation      : Enabled
+Destination Mac Validation : Enabled
+IP Address Validation      : Enabled
+
+ Vlan     Configuration    Operation   ACL Match          Static ACL
+ ----     -------------    ---------   ---------          ----------
+  100     Enabled          Active      trusted            No
+
+ Vlan     ACL Logging      DHCP Logging      Probe Logging
+ ----     -----------      ------------      -------------
+  100     Deny             Deny              Off
+
+ Vlan      Forwarded        Dropped     DHCP Drops      ACL Drops
+ ----      ---------        -------     ----------      ---------
+  100              2              1              1              0
+
+ Vlan   DHCP Permits    ACL Permits  Probe Permits   Source MAC Failures
+ ----   ------------    -----------  -------------   -------------------
+  100              1              0              0                     0
+
+ Vlan   Dest MAC Failures   IP Validation Failures   Invalid Protocol Data
+ ----   -----------------   ----------------------   ---------------------
+  100                   0                        0                       0
+___________________________________________________________________________________________________________________________________________________________________________________

@@ -1,0 +1,8 @@
+=================================================
+            Day 109 Agenda
+=================================================
+Notes on DHCP Snooping, DAI, IP Source Guard.
+Mindmaps on the same topic
+
+Bits n Bytes:
+INE all access pass buy 2 get 1 free: https://ine.com/pages/all-access-pass

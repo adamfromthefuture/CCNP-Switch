@@ -1,5 +1,5 @@
 no ip domain-lookup
-hostname SW%
+hostname r5
 line console  0
 logging synchronous
 privilege level 15
