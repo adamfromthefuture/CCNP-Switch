@@ -1,0 +1,169 @@
+================================================
+            Contents:
+1: AAA Overview 
+2: Authentication
+3: Authorization
+4: Accounting
+5: My best practices
+================================================
+___________________________________________________________________________________________________________________________________________________________________________________
+
+1: AAA Overview 
+    Standardized method to:
+        Authenticate: Confirm user identity
+        Authorize: let authenticated users utilize specific services
+        Accounting: historical logging on user activity.
+
+    AAA functions can be deployed locally with limitations or to a centralized infrastructure.
+
+    Two protocols are supported on switches:
+    TACACS+: 
+        Cisco proprietary
+        TCP port 49
+        separates AAA functions
+        communication is secure and payload is encrypted.
+        mainly used for device administration
+    RADIUS:
+        Stardards based
+        Combines Authentication and Authorization UDP 1812
+        Accounting UDP 1813
+        Only the password field is encrypted
+        used for network access
+
+    Client/Server model
+        Client: operator
+        NAS/NAD: Network Access Server/Device: Challenging the user for credentials, and passes it to the AAA server. 
+        AAA server: pass or reject
+___________________________________________________________________________________________________________________________________________________________________________________     
+
+2: Authentication
+    User identity validation.
+
+    Authentication methods:
+        local database
+        one or more RADIUS
+        one or more TACACS+
+    
+    Configuration:
+    Step 1: enable AAA
+        SW1(config)#aaa new-model 
+    
+    Step 2: Define source of Authentication
+        fallback user creation
+        
+        specify authentication servers:
+            radius-server host {hostname | ip address} [key]
+            tacacs-server host {hostname | ip address} [key]
+                SW1(config)#tacacs-server host 192.168.100.1 key cisco12345
+                Warning: The cli will be deprecated soon
+                'tacacs-server host 192.168.100.1 key cisco12345'
+                Please move to 'tacacs server <name>' CLI
+        
+        define server group
+            aaa group server {radius | tacacs} <name>
+                server <ip>    
+            
+            SW1(config)#aaa group server tacacs+ MGMT-SRV
+                SW1(config-sg-tacacs+)#server 192.168.100.1
+        
+    Step 3: Define list of authentication methods to try.
+        aaa authentication login {default | list} <method(s)>
+
+        method, handled in a sequential manner:
+            tacacs+: each configured tacacs server will be tried
+            radius: each configured radius server will be tried
+            local: credentials will be compaired to the local database
+            line: provided password will be compared to the line password
+
+        aaa authentication login MGMT-Login tacacs+ local
+    
+    Step 4: apply the method list to a line
+        login authentication {default | list}
+        login authenticaion MGMT-Login
+
+By default applied to all lines.
+___________________________________________________________________________________________________________________________________________________________________________________
+
+3: Authorization
+    Granting a specific user the ability to perform a specific task.
+    After authentication is passed, services or commands can be allowed.
+    Authenticated users are put to exec mode by default.
+
+    aaa authorization {commands | config-commands | config | exec | network | reverse-access} {default | list} {method}
+    
+    commands: permission to use any command
+    config-commands: permission to use configuration-commands
+    configuration: enter configuration mode
+    exec: exec level session
+    network: network related services
+    reverse-access: terminal server connection
+
+    methods:
+        group <name>
+        group {radius | tacacs}
+        if-authenticate: only if the user is authenticated
+        none: no external authorizationis required, authentication sucessfull fully authorized.
+    
+    Apply the method list to a line:
+        authorization {command level | exec | reverse-access} {default | list} 
+
+By default applied to all lines.
+___________________________________________________________________________________________________________________________________________________________________________________
+
+4: Accounting
+    What did you do?
+
+    aaa accounting {system | exec | commands <level>} {default | list} {start-stop | stop-only | wait-start | none}
+
+        system: major event e.g.: reload
+        exec: exec session has been initiated
+        commands: information about any command running on a specific level
+    
+    Accounting record:
+        start-stop: events are recorded when they start and stop
+        stop-only: events are recorded only when they stop
+        none: no events recorded
+___________________________________________________________________________________________________________________________________________________________________________________
+
+5: My best practices
+Create Fallback user and fallback secret
+    SW1(config)#username fallback privilege 15 secret cisco1234
+    SW1(config)#enable secret cisco12345
+
+Enable SSH
+    SW1(config)#ip domain-name lab
+    SW1(config)#crypto key generate rsa
+    How many bits in the modulus [512]: 2048
+    SW1(config)#line vty 0 15
+    SW1(config-line)#transport input ssh
+    !If you don't want to initiate SSH from your switch
+    SW1(config-line)#transport output none
+
+Restrict access from management domain
+    SW1(config)#access-list 10 remark ###Management domain###
+    SW1(config)#access-list 10 permit host 192.168.100.1
+    SW1(config)#line vty 0 15
+    SW1(config-line)#access-class 10 in
+
+Restrict access to the console
+    SW1(config)#line con 0
+    SW1(config-line)#login local
+
+Enable service password encryption
+    SW1(config)#service password-encryption
+
+Add banners
+    SW1(config)#banner motd *
+    Login or not, there is no try
+                        ____
+                    _.' :  `._
+                .-.'`.  ;   .'`.-.
+        __      / : ___\ ;  /___ ; \      __
+    ,'_ ""--.:__;".-.";: :".-.":__;.--"" _`,
+    :' `.t""--.. '<@.`;_  ',@>` ..--""j.' `;
+        `:-.._J '-.-'L__ `-- ' L_..-;'
+            "-.__ ;  .-"  "-.  : __.-"
+                L ' /.------.\ ' J
+                "-.   "--"   .-"
+                __.l"-:_JL_;-";.__
+    *
