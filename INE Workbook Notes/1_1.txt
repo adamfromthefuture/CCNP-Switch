@@ -1,0 +1,20 @@
+Preliminary Switch Config
+
+Tasks:
+    How do you list out the quantity and the naming of all the interfaces
+    show interfaces description
+
+    Configure a hostname for the switches
+        configure terminal
+        hostname SW%
+        end
+        write
+
+    Configure enable secret: cisco
+        enable secret cisco
+    
+    Make sure that no DNS resolution is performed upon mistyping a command
+    no ip domain-lookup
+
+    Configure a command so syslog messages don't break the console output
+    logging synchronous

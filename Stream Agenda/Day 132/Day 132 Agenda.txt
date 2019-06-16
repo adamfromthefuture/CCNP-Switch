@@ -1,0 +1,10 @@
+=================================================
+            Day 132 Agenda
+=================================================
+Finishing the last VACL lab 
+Starting PVLAN labs
+
+
+We confirmed that Host 1 and 4 are not able to telnet to each other.
+Host4 can telnet to 4.4.4.11 on SW1
+Hosts in vlan 1 are not able to ping the SVI for VLAN 4 which is right, but they can't ping Host4 which is not tright.
